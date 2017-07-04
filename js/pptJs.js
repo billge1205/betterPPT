@@ -116,8 +116,8 @@
                 var y = -1*h/2 - this.y;
                 var x = -1*w/2 - this.x;
                 var size = h/20;
-                var pt = h/20;
-                var pl = w/20;
+                var pt = h/30;
+                var pl = w/30;
                 section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px'});
                 section.css('transform', 'translate3d('+x+'px, '+y+'px, 0px)');
             };
@@ -127,11 +127,11 @@
                 var section = this.sections.eq(this.current);
                 var wh = $(window).height();
                 var ww = $(window).width();
-                var h = wh - 100;
-                var w = Math.min(ww-100, h*1.33);
+                var h = wh * 0.95;
+                var w = Math.min(ww * 0.95, h*1.33);
                 var size = h/20;
-                var pt = h/20;
-                var pl = w/20;
+                var pt = h/30;
+                var pl = w/30;
                 section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px'});
                 var y = -1*h/2 - this.y;
                 var x = -1*w/2 - this.x;
