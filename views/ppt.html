@@ -1,10 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>PPT DEMO</title>
-</head>
-<body>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8;"/>
+    <meta name="renderer" content="webkit">
+    <META http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width,user-scalable=yes">
+    <meta name="keywords" content="pptJs,WeJs">
+    <meta name="description" content="A html5 ppt demo with WeJs">
 
-</body>
-</html>
+    <title>PPT DEMO</title>
+    <link rel="icon" href="/node/images/favicon.ico" type="image/x-icon" />
+
+</head>
+
+<link href="/node/css/pptJs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript">var JS_PATH = '/node/js/';</script>
+<script type="text/javascript" src="/node/js/WeJs.js" path="$JS_PATH" preload="jquery,pptJs"></script>
+
+<div class="pptJs">
+    <section>
+        <p style="font-size: 1em; line-height: 1em">中字体</p>
+        <p style="font-size: 2em; line-height: 2em">大字体</p>
+        <p style="font-size: 0.5em; line-height: 0.5em">小字体</p>
+    </section>
+    <section from="left">这是一个测试2</section>
+    <section from="top">这是一个测试3</section>
+</div>
+
+<script type="text/javascript">
+    var PPT;
+    WeJs.ready(function(){
+        var pptJs = require('pptJs');
+        PPT = new pptJs('.pptJs');
+        PPT.init();
+    });
+</script>
