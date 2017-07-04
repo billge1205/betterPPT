@@ -25,6 +25,10 @@
     </section>
     <section from="left">这是一个测试2</section>
     <section from="top">这是一个测试3</section>
+    <section from="left">这是一个测试4</section>
+    <section from="bottom">这是一个测试5</section>
+    <section>这是一个测试3</section>
+    <section from="right">这是一个测试6</section>
 </div>
 
 <script type="text/javascript">
@@ -32,6 +36,6 @@
     WeJs.ready(function(){
         var pptJs = require('pptJs');
         PPT = new pptJs('.pptJs');
-        PPT.init();
+        PPT.init({click:false});
     });
 </script>

@@ -6,18 +6,17 @@
     module.requires('jquery', function (_) {
         function bindKey(ppt){
             if (ppt.click){
-                document.onclick = function(){
+                $(document).bind('click', function () {
                     ppt.step();
-                };
+                });
             }
             // 键盘事件绑定
-            document.addEventListener( "keydown", function( event ) {
+            $(document).bind('keydown', function (event) {
                 if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode <= 27) {
-                    event.preventDefault();return false;
+                    event.preventDefault(); return false;
                 }
             });
-            document.addEventListener( "keyup", function( event ) {
-                if ( event.shiftKey || event.altKey || event.ctrlKey || event.metaKey ) { return;}
+            $(document).bind('keyup', function (event) {
                 if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode <= 27) {
                     switch ( event.keyCode ) {
                         case 27: // ESC
@@ -39,7 +38,7 @@
                     event.preventDefault();
                     return false;
                 }
-            }, false );
+            });
         }
 
         function bindResize(ppt){
@@ -51,13 +50,17 @@
             this.obj = $(obj);
             this.sections = this.obj.find('section');
             this.click = true;
-            this.circle = true;
+            this.circle = false;
             this.current = null;
             this.last = null;
+            this.oView = false;
             this.x = 0;
             this.y = 0;
-            this.init = function(n){
-                n = n || 0;
+            this.init = function(config){
+                config = config || {};
+                var n = config.current || 0;
+                typeof config.circle === 'undefined' || (this.circle = config.circle);
+                typeof config.click === 'undefined' || (this.click = config.click);
                 if (n > this.sections.length){
                     this.current = 0;
                 } else {
@@ -68,15 +71,22 @@
                 bindResize(this);
             };
             this.reload = function(n){
-
+                // TODO
             };
             this.overview = function(){
-                this.obj.css({transform: 'scaleX(0.5) scaleY(0.5) scaleZ(1)'});
+                if (this.oView){
+                    return;
+                } else {
+                    this.oView = true;
+                }
+                this.obj.css({transform: 'scaleX(0.4) scaleY(0.4) scaleZ(1) '+this.obj.css('transform')});
             };
             this.step = function(){
+                // TODO
                 this.next();
             };
             this.back = function(){
+                // TODO
                 this.prev();
             };
             this.prev = function(){
@@ -112,7 +122,7 @@
                 var wh = $(window).height();
                 var ww = $(window).width();
                 var h = wh * 0.95;
-                var w = Math.min(ww * 0.95, h*1.33);
+                var w = Math.min(ww * 0.95, h*1.5);
                 var y = -1*h/2 - this.y;
                 var x = -1*w/2 - this.x;
                 var size = h/20;
@@ -128,7 +138,7 @@
                 var wh = $(window).height();
                 var ww = $(window).width();
                 var h = wh * 0.95;
-                var w = Math.min(ww * 0.95, h*1.33);
+                var w = Math.min(ww * 0.95, h*1.5);
                 var size = h/20;
                 var pt = h/30;
                 var pl = w/30;
