@@ -4,7 +4,7 @@
 (function(module){
     "use strict";
     module.requires('jquery', function (_) {
-        function bindKey(ppt){
+        function bindCheck(ppt){
             if (ppt.click){
                 $(document).bind('click', function () {
                     ppt.step();
@@ -15,8 +15,7 @@
                 if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode <= 27) {
                     event.preventDefault(); return false;
                 }
-            });
-            $(document).bind('keyup', function (event) {
+            }).bind('keyup', function (event) {
                 if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode <= 27) {
                     switch ( event.keyCode ) {
                         case 27: // ESC
@@ -41,11 +40,88 @@
             });
         }
 
+        function unbindCheck(ppt) {
+            $(document).unbind('click').unbind('keyup');
+        }
+
+        function bindOverView(ppt) {
+            function focusSection(n) {
+                var section = ppt.sections.eq(n);
+                ppt.sections.removeClass('active');
+                section.addClass('active');
+                ppt.sections.each(function (i) {
+                    ppt.resize(i, false);
+                });
+            }
+
+            $(ppt.obj).on('mouseenter', 'section', function (event) {
+                ppt.current = ppt.sections.index(this);
+                focusSection(ppt.current);
+            }).on('click', 'section', function (event) {
+                ppt.current = ppt.sections.index(this);
+                focusSection(ppt.current);
+                ppt.review();
+            });
+            $(document).bind('keyup', function (event) {
+                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode <= 27) {
+                    switch ( event.keyCode ) {
+                        case 27: // ESC
+                            ppt.review();
+                            break;
+                        case 37: // Left
+                            var prev = ppt.getPrev();
+                            if (prev === false){
+                                return;
+                            }
+                            ppt.current = prev;
+                            focusSection(ppt.current);
+                            break;
+                        case 39: // Right
+                            var next = ppt.getNext();
+                            if (next === false){
+                                return;
+                            }
+                            ppt.current = next;
+                            focusSection(ppt.current);
+                            break;
+                        case 38: // Up
+                        case 40: // Down
+                            break;
+                    }
+                    event.preventDefault();
+                    return false;
+                }
+            });
+        }
+        
+        function unbindOverView(ppt) {
+            $(ppt.obj).off('mouseenter', 'section').off('click', 'section');
+            $(document).unbind('keyup');
+        }
+
         function bindResize(ppt){
-            $(window).resize(function(){
+            $(window).bind('resize', function(){
                 ppt.resize();
             });
         }
+        
+        function unbindResize() {
+            $(window).unbind('resize');
+        }
+
+        function transform(obj, data, transition) {
+            typeof transition === 'undefined' && (transition = false);
+            var d = $(obj).data('transform');
+            d = d || {};
+            d = Object.assign(d, data);
+            $(obj).data('transform', d);
+            transition && $(obj).addClass('transition') || $(obj).removeClass('transition');
+            var x=d.x||0, y=d.y||0, z=d.z||0,
+                scale=typeof d.scale==='undefined'?'1':d.scale,
+                rX=d.rotateX||0,rY=d.rotateY||0,rZ=d.rotateZ||0;
+            $(obj).css('transform', 'translate3d('+x+'px, '+y+'px, '+z+'px) scale('+scale+') rotateX('+rX+'deg) rotateY('+rY+'deg) rotateZ('+rZ+'deg)');
+        }
+
         var PPT = function(obj){
             this.obj = $(obj);
             this.sections = this.obj.find('section');
@@ -67,7 +143,7 @@
                     this.current = n;
                 }
                 this.show();
-                bindKey(this);
+                bindCheck(this);
                 bindResize(this);
             };
             this.reload = function(n){
@@ -80,17 +156,65 @@
                     this.oView = true;
                 }
                 var self = this;
+                this.x = this.y = 0;
+                transform(this.obj, {x:0,y:0}, false);
                 this.sections.each(function (i) {
                     self.resize(i);
                 });
                 this.obj.addClass('overview');
+                //奇怪的逻辑 不用settimeout 过度就有问题
+                setTimeout(function () {
+                    self.sections.each(function (i,section) {
+                        transform($(section), {rotateY: 50}, true);
+                    });
+                    transform(self.obj, {scale: 0.6}, true);
+                },0);
+                unbindCheck(this);
+                unbindResize(this);
+                bindOverView(this);
+            };
+            this.review = function () {
+                if (!this.oView){
+                    return;
+                } else {
+                    this.oView = false;
+                }
+                this.obj.removeClass('overview');
                 this.sections.each(function (i,section) {
-                    $(section).css({transform: $(section).css('transform')+' rotateY(75deg)'});
+                    transform($(section), {rotateY: 0}, true);
                 });
-                this.sections.bind('click', function () {
-                    console.log(this);
-                });
-                this.obj.css({transform: 'scaleX(0.7) scaleY(0.7) scaleZ(1) '+this.obj.css('transform')});
+                transform(this.obj, {scale: 1}, true);
+                unbindOverView(this);
+                bindCheck(this);
+                bindResize(this);
+            };
+            this.getPrev = function () {
+                var prev;
+                if (this.current === 0){
+                    if (this.circle){
+                        prev = this.sections.length-1;
+                    } else {
+                        // 已经是首页了
+                        return false;
+                    }
+                } else {
+                    prev = this.current-1;
+                }
+                return prev;
+            };
+            this.getNext = function () {
+                var next;
+                if (this.current === this.sections.length-1){
+                    if (this.circle){
+                        next = 0;
+                    } else {
+                        // 播放完毕
+                        return false;
+                    }
+                } else {
+                    next = this.current+1;
+                }
+                return next;
             };
             this.step = function(){
                 // TODO
@@ -102,32 +226,23 @@
             };
             this.prev = function(){
                 this.last = this.current;
-                if (this.current === 0){
-                    if (this.circle){
-                        this.current = this.sections.length-1;
-                    } else {
-                        // 已经是首页了
-                        return;
-                    }
-                } else {
-                    this.current--;
+                var prev = this.getPrev();
+                if (prev === false){
+                    return;
                 }
+                this.current = prev;
                 this.show(false);
             };
             this.next = function(){
-                if (this.current === this.sections.length-1){
-                    if (this.circle){
-                        this.current = 0;
-                    } else {
-                        // 播放完毕
-                        return;
-                    }
-                } else {
-                    this.current++;
+                var next = this.getNext();
+                if (next === false){
+                    return;
                 }
+                this.current = next;
                 this.show();
             };
-            this.resize = function(n){
+            this.resize = function(n, css){
+                typeof css === "undefined" && (css = true);
                 typeof n === "undefined" && (n = this.current);
                 var section = this.sections.eq(n);
                 var wh = $(window).height();
@@ -139,8 +254,12 @@
                 var size = h/20;
                 var pt = h/30;
                 var pl = w/30;
-                section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px', 'z-index':n});
-                section.css('transform', 'translate3d('+x+'px, '+y+'px, 0px)');
+                if (css){
+                    section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px', 'z-index':n});
+                    transform(section, {x:x,y:y}, false);
+                } else {
+                    transform(section, {x:x,y:y}, true);
+                }
             };
             this.show = function(next){
                 next = typeof next === "undefined" ? true : next;
@@ -168,28 +287,28 @@
                 }
                 switch (from){
                     case 'left':
-                        section.css('transform', 'translate3d('+(x-ww)+'px, '+y+'px, 0px)');
+                        transform(section, {x:x-ww,y:y}, false);
                         left = -ww;
                         break;
                     case 'top':
-                        section.css('transform', 'translate3d('+x+'px, '+(y-wh)+'px, 0px)');
+                        transform(section, {x:x,y:y-wh}, false);
                         up = -wh;
                         break;
                     case 'bottom':
-                        section.css('transform', 'translate3d('+x+'px, '+(y+wh)+'px, 0px)');
+                        transform(section, {x:x,y:y+wh}, false);
                         up = wh;
                         break;
                     case 'right':
-                        section.css('transform', 'translate3d('+(x+ww)+'px, '+y+'px, 0px)');
+                        transform(section, {x:x+ww,y:y}, false);
                         left = ww;
                         break;
                     default:
-                        section.css('transform', 'translate3d('+x+'px, '+y+'px, 0px)');
+                        transform(section, {x:x,y:y}, false);
                         break;
                 }
                 this.x -= left;
                 this.y -= up;
-                this.obj.css('transform', 'translate3d('+this.x+'px, '+this.y+'px, 0px)');
+                transform(this.obj, {x:this.x,y:this.y}, true);
                 section.addClass('active');
             };
         };
