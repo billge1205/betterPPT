@@ -79,7 +79,18 @@
                 } else {
                     this.oView = true;
                 }
-                this.obj.css({transform: 'scaleX(0.4) scaleY(0.4) scaleZ(1) '+this.obj.css('transform')});
+                var self = this;
+                this.sections.each(function (i) {
+                    self.resize(i);
+                });
+                this.obj.addClass('overview');
+                this.sections.each(function (i,section) {
+                    $(section).css({transform: $(section).css('transform')+' rotateY(75deg)'});
+                });
+                this.sections.bind('click', function () {
+                    console.log(this);
+                });
+                this.obj.css({transform: 'scaleX(0.7) scaleY(0.7) scaleZ(1) '+this.obj.css('transform')});
             };
             this.step = function(){
                 // TODO
@@ -124,11 +135,11 @@
                 var h = wh * 0.95;
                 var w = Math.min(ww * 0.95, h*1.5);
                 var y = -1*h/2 - this.y;
-                var x = -1*w/2 - this.x;
+                var x = -1*w/2 - this.x + (n-this.current)*w/2;
                 var size = h/20;
                 var pt = h/30;
                 var pl = w/30;
-                section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px'});
+                section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px', 'z-index':n});
                 section.css('transform', 'translate3d('+x+'px, '+y+'px, 0px)');
             };
             this.show = function(next){
