@@ -12,11 +12,11 @@
             }
             // 键盘事件绑定
             $(document).bind('keydown', function (event) {
-                if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode <= 27) {
+                if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode === 27) {
                     event.preventDefault(); return false;
                 }
             }).bind('keyup', function (event) {
-                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode <= 27) {
+                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27) {
                     switch ( event.keyCode ) {
                         case 27: // ESC
                             ppt.overview();
@@ -63,8 +63,9 @@
                 ppt.review();
             });
             $(document).bind('keyup', function (event) {
-                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode <= 27) {
+                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27 || event.keyCode === 13) {
                     switch ( event.keyCode ) {
+                        case 13: // Enter
                         case 27: // ESC
                             ppt.review();
                             break;
@@ -128,6 +129,7 @@
             this.click = true;
             this.circle = false;
             this.current = null;
+            this.cstep = null;
             this.last = null;
             this.oView = false;
             this.x = 0;
@@ -185,8 +187,11 @@
                 });
                 transform(this.obj, {scale: 1}, true);
                 unbindOverView(this);
-                bindCheck(this);
-                bindResize(this);
+                var self = this;
+                setTimeout(function () {
+                    bindCheck(self);
+                    bindResize(self);
+                }, 0);
             };
             this.getPrev = function () {
                 var prev;
