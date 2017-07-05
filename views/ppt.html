@@ -5,7 +5,7 @@
     <meta name="renderer" content="webkit">
     <META http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width,user-scalable=yes">
-    <meta name="keywords" content="pptJs,WeJs">
+    <meta name="keywords" content="betterPPT,WeJs">
     <meta name="description" content="A html5 ppt demo with WeJs">
 
     <title>PPT DEMO</title>
@@ -13,11 +13,11 @@
 
 </head>
 
-<link href="/node/css/pptJs.css" rel="stylesheet" type="text/css"/>
+<link href="/node/css/betterPPT.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript">var JS_PATH = '/node/js/';</script>
-<script type="text/javascript" src="/node/js/WeJs.js" path="$JS_PATH" preload="jquery,pptJs"></script>
+<script type="text/javascript" src="/node/js/WeJs.js" path="$JS_PATH" preload="jquery,betterPPT"></script>
 
-<div class="pptJs">
+<div class="betterPPT">
     <section>
         <p style="font-size: 1em; line-height: 1em">中字体</p>
         <p style="font-size: 2em; line-height: 2em">大字体</p>
@@ -34,8 +34,8 @@
 <script type="text/javascript">
     var PPT;
     WeJs.ready(function(){
-        var pptJs = require('pptJs');
-        PPT = new pptJs('.pptJs');
+        var betterPPT = require('betterPPT');
+        PPT = new betterPPT('.betterPPT');
         PPT.init({click:false});
     });
 </script>

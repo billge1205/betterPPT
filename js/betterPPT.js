@@ -198,4 +198,4 @@
     });
 
 
-}(WeJs.exports.pptJs));
+}(WeJs.exports.betterPPT));
