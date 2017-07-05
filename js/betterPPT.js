@@ -3,7 +3,7 @@
  */
 (function(module){
     "use strict";
-    module.requires('jquery', function (_) {
+    var loadPPT = function () {
         function bindCheck(ppt){
             if (ppt.click){
                 $(document).bind('click', function () {
@@ -94,7 +94,7 @@
                 }
             });
         }
-        
+
         function unbindOverView(ppt) {
             $(ppt.obj).off('mouseenter', 'section').off('click', 'section');
             $(document).unbind('keyup');
@@ -105,7 +105,7 @@
                 ppt.resize();
             });
         }
-        
+
         function unbindResize() {
             $(window).unbind('resize');
         }
@@ -129,14 +129,14 @@
             this.click = true;
             this.circle = false;
             this.current = null;
-            this.cstep = null;
+            this.steps = [];
             this.last = null;
             this.oView = false;
             this.x = 0;
             this.y = 0;
             this.init = function(config){
                 config = config || {};
-                var n = config.current || 0;
+                var n = config.current || this.gethash();
                 typeof config.circle === 'undefined' || (this.circle = config.circle);
                 typeof config.click === 'undefined' || (this.click = config.click);
                 if (n > this.sections.length){
@@ -144,12 +144,22 @@
                 } else {
                     this.current = n;
                 }
-                this.show();
+                this.sections.each(function (i) {
+                    //TODO step
+                });
+                this.show('first');
                 bindCheck(this);
                 bindResize(this);
             };
             this.reload = function(n){
                 // TODO
+            };
+            this.sethash = function (n) {
+                n = n || this.current;
+                history.replaceState(null,'','#'+n);
+            };
+            this.gethash = function () {
+                return location.hash ? parseInt(location.hash.substring(1)) : 0;
             };
             this.overview = function(){
                 if (this.oView){
@@ -192,6 +202,7 @@
                     bindCheck(self);
                     bindResize(self);
                 }, 0);
+                this.sethash();
             };
             this.getPrev = function () {
                 var prev;
@@ -283,7 +294,7 @@
                 var left = 0;
                 var up = 0;
 
-                var from = section.attr('from');
+                var from = next !== 'first' ? section.attr('from') : '';
                 // 回退逻辑
                 if (!next){
                     from = this.sections.eq(this.last).attr('from');
@@ -315,11 +326,18 @@
                 this.y -= up;
                 transform(this.obj, {x:this.x,y:this.y}, true);
                 section.addClass('active');
+                this.sethash();
             };
         };
+        return PPT;
+    };
 
-        module.exports = PPT;
-    });
+    if (typeof WeJs === "undefined"){
+        module.PPT = loadPPT();
+    } else {
+        module.requires('jquery', function (_) {
+            module.exports = loadPPT();
+        });
+    }
 
-
-}(WeJs.exports.betterPPT));
+}(typeof WeJs === "undefined" ? window : WeJs.exports.betterPPT));
