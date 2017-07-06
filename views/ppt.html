@@ -16,13 +16,12 @@
 <link href="/node/css/betterPPT.css" rel="stylesheet" type="text/css"/>
 <!--<script type="text/javascript" src="/node/js/jquery.js"></script>-->
 <!--<script type="text/javascript" src="/node/js/betterPPT.js"></script>-->
-<script type="text/javascript">var JS_PATH = '/node/js/';</script>
-<script type="text/javascript" src="/node/js/WeJs.js" path="$JS_PATH" preload="betterPPT"></script>
+<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/"></script>
 
 <div class="betterPPT">
     <section from="left">
-        <p style="font-size: 1em; line-height: 1em" step="0">中字体</p>
-        <p style="font-size: 2em; line-height: 2em" step="1">大字体</p>
+        <p style="font-size: 1em; line-height: 1em" step="1">中字体</p>
+        <p style="font-size: 2em; line-height: 2em" step="5">大字体</p>
         <p style="font-size: 0.5em; line-height: 0.5em" step="2">小字体</p>
     </section>
     <section from="left">这是一个测试2</section>
@@ -34,12 +33,9 @@
 </div>
 
 <script type="text/javascript">
-    var PPT;
-    WeJs.ready(function(){
-        var betterPPT = require('betterPPT');
-        PPT = new betterPPT('.betterPPT');
-        PPT.init({click:true});
-    });
-//    var betterPPT = new PPT('.betterPPT');
-//    betterPPT.init();
+    var betterPPT = require('betterPPT');
+    var PPT = new betterPPT('.betterPPT');
+    PPT.init({anchor:false});
+//    var PPT = new betterPPT('.betterPPT');
+//    PPT.init();
 </script>

@@ -123,11 +123,12 @@
             $(obj).css('transform', 'translate3d('+x+'px, '+y+'px, '+z+'px) scale('+scale+') rotateX('+rX+'deg) rotateY('+rY+'deg) rotateZ('+rZ+'deg)');
         }
 
-        var PPT = function(obj){
+        var betterPPT = function(obj){
             this.obj = $(obj);
             this.sections = this.obj.find('section');
             this.click = true;
             this.circle = false;
+            this.anchor = true;
             this.current = null;
             this.steps = [];
             this.last = null;
@@ -139,13 +140,29 @@
                 var n = config.current || this.gethash();
                 typeof config.circle === 'undefined' || (this.circle = config.circle);
                 typeof config.click === 'undefined' || (this.click = config.click);
+                typeof config.anchor === 'undefined' || (this.anchor = config.anchor);
                 if (n > this.sections.length){
                     this.current = 0;
                 } else {
                     this.current = n;
                 }
-                this.sections.each(function (i) {
-                    //TODO step
+                var self = this;
+                this.sections.each(function (i, section) {
+                    var steps = {indexs:[0], steps:{}, init: [], current:0} ;
+                    $(section).find('[step]').each(function () {
+                        var index = parseInt($(this).attr('step'));
+                        if (index === 0){
+                            steps.init.push(this);
+                        } else {
+                            if ($.inArray(index, steps.indexs) === -1){
+                                steps.indexs.push(index);
+                                steps['steps'][index] = [];
+                            }
+                            steps['steps'][index].push(this);
+                        }
+                    });
+                    steps.indexs.sort();
+                    self.steps.push(steps);
                 });
                 this.show('first');
                 bindCheck(this);
@@ -155,8 +172,10 @@
                 // TODO
             };
             this.sethash = function (n) {
-                n = n || this.current;
-                history.replaceState(null,'','#'+n);
+                if (this.anchor){
+                    n = n || this.current;
+                    history.replaceState(null,'','#'+n);
+                }
             };
             this.gethash = function () {
                 return location.hash ? parseInt(location.hash.substring(1)) : 0;
@@ -233,12 +252,22 @@
                 return next;
             };
             this.step = function(){
-                // TODO
-                this.next();
+                var step = this.steps[this.current];
+                if (step.current >= step.indexs.length-1){
+                    this.next();
+                } else {
+                    step.current++;
+                    this.showStep();
+                }
             };
             this.back = function(){
-                // TODO
-                this.prev();
+                this.hideStep();
+                var step = this.steps[this.current];
+                if (step.current === 0){
+                    this.prev();
+                } else {
+                    step.current--;
+                }
             };
             this.prev = function(){
                 this.last = this.current;
@@ -327,17 +356,41 @@
                 transform(this.obj, {x:this.x,y:this.y}, true);
                 section.addClass('active');
                 this.sethash();
+                // init step
+                var step = this.steps[this.current];
+                if (step.current === 0){
+                    this.showStep(true);
+                }
+            };
+            this.showStep = function (init) {
+                typeof init === "undefined" && (init = false);
+                var step = this.steps[this.current];
+                var steps;
+                if (init){
+                    steps = step.init;
+                } else {
+                    steps = step['steps'][step['indexs'][step.current]];
+                }
+                for (var i in steps){
+                    $(steps[i]).addClass('active');
+                }
+            };
+            this.hideStep = function () {
+                var step = this.steps[this.current];
+                var steps = step.steps[step.indexs[step.current]];
+                for (var i in steps){
+                    $(steps[i]).removeClass('active');
+                }
             };
         };
-        return PPT;
+        return betterPPT;
     };
 
     if (typeof WeJs === "undefined"){
-        module.PPT = loadPPT();
+        module.betterPPT = loadPPT();
     } else {
-        module.requires('jquery', function (_) {
-            module.exports = loadPPT();
-        });
+        require('jquery');
+        module.exports = loadPPT();
     }
 
 }(typeof WeJs === "undefined" ? window : WeJs.exports.betterPPT));
