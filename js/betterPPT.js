@@ -136,6 +136,37 @@
             this.x = 0;
             this.y = 0;
             this.init = function(config){
+                var pfx = ( function() {
+                    var style = document.createElement( "dummy" ).style,
+                        prefixes = "Webkit Moz O ms Khtml".split( " " ),
+                        memory = {};
+                    return function( prop ) {
+                        if ( typeof memory[ prop ] === "undefined" ) {
+                            var ucProp  = prop.charAt( 0 ).toUpperCase() + prop.substr( 1 ),
+                                props   = ( prop + " " + prefixes.join( ucProp + " " ) + ucProp ).split( " " );
+                            memory[ prop ] = null;
+                            for ( var i in props ) {
+                                if ( style[ props[ i ] ] !== undefined ) {
+                                    memory[ prop ] = props[ i ];
+                                    break;
+                                }
+                            }
+                        }
+                        return memory[ prop ];
+                    };
+                } )();
+                // check support
+                var ua = navigator.userAgent.toLowerCase();
+                var body = document.body;
+                var supported = ( pfx( "perspective" ) !== null ) &&
+                    // Browser should support `classList` and `dataset` APIs
+                    ( body.classList ) &&
+                    ( body.dataset ) && ( ua.search( /(iphone)|(ipod)|(android)/ ) === -1 );
+                if (!supported){
+                    $('.betterPPT-unsupported').show();
+                    this.obj.remove();
+                    return;
+                }
                 config = config || {};
                 var n = config.current || this.gethash();
                 typeof config.circle === 'undefined' || (this.circle = config.circle);
