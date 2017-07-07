@@ -143,7 +143,7 @@
         var WeJs = {
             version : '0.9.3',
             jsRoot: '',domains: [],runList: [],modules: {},exports: {},events: {},
-            lists: [],files: {},hashs: {},alert: true,
+            lists: [],files: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
                 this.files = configs.files;
                 var domains = configs.path;
@@ -153,7 +153,7 @@
             },
             ready: function(callback){
                 if (this.lists.length === 0){
-                    callback.call(this);
+                    callback.apply(this, this.preloads);
                 } else {
                     this.bind('onload', callback);
                 }
@@ -225,12 +225,12 @@
                 }
                 this.events[event].push(callback);
             },
-            trigger: function(event){
+            trigger: function(event, avgs){
                 if (this.events[event] && this.events[event].length > 0){
                     var callbacks = this.events[event];
                     this.events[event] = [];
                     for (var i in callbacks){
-                        callbacks[i].apply(this, arguments);
+                        callbacks[i].apply(this, avgs);
                     }
                 }
             },
@@ -283,7 +283,7 @@
                     runs[j].callback.apply(this, runs[j].exports);
                 }
                 if (this.lists.length === 0){
-                    this.trigger('onload');
+                    this.trigger('onload', this.preloads);
                 }
             },
             imports: function(name){
@@ -405,7 +405,9 @@
     root.WeJs.init({path:path, files: files, hashs: hashs});
     if (preload){
         preload = preload.split(',');
-        root.requires(preload);
+        root.requires(preload, function () {
+            root.WeJs.preloads = arguments;
+        });
     }
 })(this, document);
 

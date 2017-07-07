@@ -324,7 +324,8 @@
                 var wh = $(window).height();
                 var ww = $(window).width();
                 var h = wh * 0.95;
-                var w = Math.min(ww * 0.95, h*1.5);
+                var w = ww * 0.95;
+                w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
                 var y = -1*h/2 - this.y;
                 var x = -1*w/2 - this.x + (n-this.current)*w/2;
                 var size = h/20;
@@ -344,7 +345,8 @@
                 var wh = $(window).height();
                 var ww = $(window).width();
                 var h = wh * 0.95;
-                var w = Math.min(ww * 0.95, h*1.5);
+                var w = ww * 0.95;
+                w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
                 var size = h/20;
                 var pt = h/30;
                 var pl = w/30;
@@ -448,8 +450,9 @@
     if (typeof WeJs === "undefined"){
         module.betterPPT = loadPPT();
     } else {
-        require('jquery');
-        module.exports = loadPPT();
+        module.requires('jquery', function (_) {
+            module.exports = loadPPT();
+        });
     }
 
 }(typeof WeJs === "undefined" ? window : WeJs.exports.betterPPT));
