@@ -360,11 +360,17 @@
                     from = this.sections.eq(this.last).attr('from');
                     ww = -1*ww;
                     wh = -1*wh;
+                    if (from === 'zoomin'){from='zoomout'}
+                    else if (from === 'zoomout'){from='zoomin'}
                 }
                 switch (from){
                     case 'left':
                         transform(section, {x:x-ww,y:y}, false);
                         left = -ww;
+                        break;
+                    case 'right':
+                        transform(section, {x:x+ww,y:y}, false);
+                        left = ww;
                         break;
                     case 'top':
                         transform(section, {x:x,y:y-wh}, false);
@@ -374,17 +380,27 @@
                         transform(section, {x:x,y:y+wh}, false);
                         up = wh;
                         break;
-                    case 'right':
-                        transform(section, {x:x+ww,y:y}, false);
-                        left = ww;
+                    case 'zoomin':
+                        transform(section, {x:x,y:y,scale:0.2}, false);
+                        setTimeout(function () {
+                            transform(section, {scale:1}, true);
+                        },10);
+                        break;
+                    case 'zoomout':
+                        transform(section, {x:x,y:y,scale:3}, false);
+                        setTimeout(function () {
+                            transform(section, {scale:1}, true);
+                        },10);
                         break;
                     default:
                         transform(section, {x:x,y:y}, false);
                         break;
                 }
-                this.x -= left;
-                this.y -= up;
-                transform(this.obj, {x:this.x,y:this.y}, true);
+                if ($.inArray(from, ['left', 'right', 'top', 'bottom']) !== -1){
+                    this.x -= left;
+                    this.y -= up;
+                    transform(this.obj, {x:this.x,y:this.y}, true);
+                }
                 section.addClass('active');
                 this.sethash();
                 // init step
@@ -403,14 +419,26 @@
                     steps = step['steps'][step['indexs'][step.current]];
                 }
                 for (var i in steps){
-                    $(steps[i]).addClass('active');
+                    var obj = steps[i];
+                    $(obj).addClass('active');
+                    var action = $(obj).attr('action');
+                    if (action){
+                        action = eval(action);
+                        action.call(obj, true);
+                    }
                 }
             };
             this.hideStep = function () {
                 var step = this.steps[this.current];
                 var steps = step.steps[step.indexs[step.current]];
                 for (var i in steps){
-                    $(steps[i]).removeClass('active');
+                    var obj = steps[i];
+                    $(obj).removeClass('active');
+                    var action = $(obj).attr('action');
+                    if (action){
+                        action = eval(action);
+                        action.call(obj, false);
+                    }
                 }
             };
         };

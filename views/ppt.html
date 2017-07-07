@@ -23,15 +23,17 @@
 </div>
 <div class="betterPPT">
     <section from="left">
-        <p style="font-size: 1em; line-height: 1em" step="1">中字体</p>
+        <div class="cube" step="3"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        <div step="4" action="rotate"></div>
+        <p style="font-size: 1em; line-height: 1em" step="0">中字体</p>
         <p style="font-size: 2em; line-height: 2em" step="5">大字体</p>
         <p style="font-size: 0.5em; line-height: 0.5em" step="2">小字体</p>
     </section>
-    <section from="left">这是一个测试2</section>
-    <section from="top">这是一个测试3</section>
+    <section from="zoomin">这是一个测试2</section>
+    <section from="zoomout">这是一个测试3</section>
     <section from="left">这是一个测试4</section>
     <section from="bottom">这是一个测试5</section>
-    <section>这是一个测试3</section>
+    <section from="top">这是一个测试3</section>
     <section from="right">这是一个测试6</section>
 </div>
 
@@ -41,4 +43,8 @@
     PPT.init({anchor:false});
 //    var PPT = new betterPPT('.betterPPT');
 //    PPT.init();
+
+    function rotate(show) {
+        show && $('.cube').addClass('rotate') || $('.cube').removeClass('rotate');
+    }
 </script>
