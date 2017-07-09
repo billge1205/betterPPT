@@ -1,7 +1,6 @@
 /**
  * Created by billge on 2017/6/14.
  */
-//JS 模拟$(document).ready()
 ;(function (root, d) {
     "use strict";
     //兼容无痕模式
@@ -251,6 +250,9 @@
             run: function(src){
                 var runs = [];
                 var news = [];
+                if (this.lists.length === 0){
+                    return;
+                }
                 for (var i in this.lists){
                     var require = this.lists[i];
                     if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){

@@ -4,46 +4,6 @@
 (function(module){
     "use strict";
     var loadPPT = function () {
-        function bindCheck(ppt){
-            if (ppt.click){
-                $(document).bind('click', function () {
-                    ppt.step();
-                });
-            }
-            // 键盘事件绑定
-            $(document).bind('keydown', function (event) {
-                if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode === 27) {
-                    event.preventDefault(); return false;
-                }
-            }).bind('keyup', function (event) {
-                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27) {
-                    switch ( event.keyCode ) {
-                        case 27: // ESC
-                            ppt.overview();
-                            break;
-                        case 37: // Left
-                            ppt.back();
-                            break;
-                        case 39: // Right
-                            ppt.step();
-                            break;
-                        case 38: // Up
-                            ppt.prev();
-                            break;
-                        case 40: // Down
-                            ppt.next();
-                            break;
-                    }
-                    event.preventDefault();
-                    return false;
-                }
-            });
-        }
-
-        function unbindCheck(ppt) {
-            $(document).unbind('click').unbind('keyup');
-        }
-
         function bindOverView(ppt) {
             function focusSection(n) {
                 var section = ppt.sections.eq(n);
@@ -196,7 +156,7 @@
                     self.steps.push(steps);
                 });
                 this.show('first');
-                bindCheck(this);
+                this.bindCheck();
                 bindResize(this);
             };
             this.reload = function(n){
@@ -231,7 +191,7 @@
                     });
                     transform(self.obj, {scale: 0.6}, true);
                 },0);
-                unbindCheck(this);
+                this.unbindCheck();
                 unbindResize(this);
                 bindOverView(this);
             };
@@ -246,10 +206,11 @@
                     transform($(section), {rotateY: 0}, true);
                 });
                 transform(this.obj, {scale: 1}, true);
+                this.sections.eq(this.current).css('z-index', this.sections.length+100);
                 unbindOverView(this);
                 var self = this;
                 setTimeout(function () {
-                    bindCheck(self);
+                    self.bindCheck();
                     bindResize(self);
                 }, 0);
                 this.sethash();
@@ -261,6 +222,10 @@
                         prev = this.sections.length-1;
                     } else {
                         // 已经是首页了
+                        if (!this.oView){
+                            var toast = require('toast');
+                            toast('已经是第一页了');
+                        }
                         return false;
                     }
                 } else {
@@ -275,6 +240,10 @@
                         next = 0;
                     } else {
                         // 播放完毕
+                        if (!this.oView) {
+                            var toast = require('toast');
+                            toast('已经是最后一页了');
+                        }
                         return false;
                     }
                 } else {
@@ -443,6 +412,46 @@
                     }
                 }
             };
+            this.bindCheck = function(){
+                if (this.click){
+                    $(document).bind('click', function () {
+                        this.step();
+                    });
+                }
+                var self = this;
+                // 键盘事件绑定
+                $(document).bind('keydown', function (event) {
+                    if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode === 27) {
+                        event.preventDefault(); return false;
+                    }
+                }).bind('keyup', function (event) {
+
+                    if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27) {
+                        switch ( event.keyCode ) {
+                            case 27: // ESC
+                                self.overview();
+                                break;
+                            case 37: // Left
+                                self.back();
+                                break;
+                            case 39: // Right
+                                self.step();
+                                break;
+                            case 38: // Up
+                                self.prev();
+                                break;
+                            case 40: // Down
+                                self.next();
+                                break;
+                        }
+                        event.preventDefault();
+                        return false;
+                    }
+                });
+            };
+            this.unbindCheck = function() {
+                $(document).unbind('click').unbind('keyup');
+            }
         };
         return betterPPT;
     };
