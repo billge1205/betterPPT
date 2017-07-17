@@ -224,7 +224,7 @@
                         // 已经是首页了
                         if (!this.oView){
                             var toast = require('toast');
-                            toast('已经是第一页了');
+                            toast.show('已经是第一页了');
                         }
                         return false;
                     }
@@ -242,7 +242,7 @@
                         // 播放完毕
                         if (!this.oView) {
                             var toast = require('toast');
-                            toast('已经是最后一页了');
+                            toast.show('已经是最后一页了');
                         }
                         return false;
                     }
@@ -372,7 +372,8 @@
                     this.y -= up;
                     transform(this.obj, {x:this.x,y:this.y}, true);
                 }
-                section.addClass('active');
+                this.sections.css('z-index', 0);
+                section.addClass('active').css('z-index', 9999);
                 this.sethash();
                 // init step
                 var step = this.steps[this.current];
@@ -421,11 +422,16 @@
                 var self = this;
                 // 键盘事件绑定
                 $(document).bind('keydown', function (event) {
+                    if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT'){
+                        return true;
+                    }
                     if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode === 27) {
                         event.preventDefault(); return false;
                     }
                 }).bind('keyup', function (event) {
-
+                    if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT'){
+                        return true;
+                    }
                     if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27) {
                         switch ( event.keyCode ) {
                             case 27: // ESC
