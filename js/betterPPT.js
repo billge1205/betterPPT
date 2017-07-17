@@ -3,6 +3,19 @@
  */
 (function(module){
     "use strict";
+
+    var DoToastTimer;
+    function toast(txt){
+        clearTimeout(DoToastTimer);
+        if ($("#showToasts").length === 0){
+            $('body').append('<div class="showToasts" id="showToasts"></div>');
+        }
+        $("#showToasts").text(txt).show();
+        DoToastTimer = setTimeout(function(){
+            $("#showToasts").text("").stop().hide(200);
+        },2000);
+    }
+
     var loadPPT = function () {
         function bindOverView(ppt) {
             function focusSection(n) {
@@ -223,8 +236,7 @@
                     } else {
                         // 已经是首页了
                         if (!this.oView){
-                            var toast = require('toast');
-                            toast.show('已经是第一页了');
+                            toast('已经是第一页了');
                         }
                         return false;
                     }
@@ -241,8 +253,7 @@
                     } else {
                         // 播放完毕
                         if (!this.oView) {
-                            var toast = require('toast');
-                            toast.show('已经是最后一页了');
+                            toast('已经是最后一页了');
                         }
                         return false;
                     }
