@@ -140,15 +140,16 @@
 
     var currentScript;
     var getCurrentScript = function () {
+        if(document.currentScript){
+            return document.currentScript;
+        }
         if (currentScript && currentScript.readyState === 'interactive') {
             return currentScript;
         }
         currentScript = null;
         var scripts = document.getElementsByTagName('script');
-        for (var i in scripts){
-            var script = scripts[i];
-            console.log(script, script.readyState);
-            if (script.readyState === 'interactive') {
+        for (var i = 0, script; script = scripts[i++];) {
+            if (script.tagName === 'SCRIPT' && script.readyState === 'interactive') {
                 currentScript = script;
                 return currentScript;
             }
@@ -158,7 +159,7 @@
 
     if (isNone(root.WeJs)){
         var WeJs = {
-            version : '0.9.3',
+            version : '0.9.4',
             jsRoot: '',domains: [],runList: [],modules: {},exports: {},events: {},
             lists: [],files: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
@@ -311,7 +312,7 @@
                 if (!script){throw new Error('no script loading')}
                 var src = script.getAttribute('data-src');
                 if (!src){throw new Error('script src error')}
-                callback.call(WeJs.exports[src]);
+                callback.call(this, WeJs.exports[src]);
             },
             imports: function(name){
                 return new importObj(name);
