@@ -138,6 +138,24 @@
         };
     };
 
+    var currentScript;
+    var getCurrentScript = function () {
+        if (currentScript && currentScript.readyState === 'interactive') {
+            return currentScript;
+        }
+        currentScript = null;
+        var scripts = document.getElementsByTagName('script');
+        for (var i in scripts){
+            var script = scripts[i];
+            console.log(script, script.readyState);
+            if (script.readyState === 'interactive') {
+                currentScript = script;
+                return currentScript;
+            }
+        }
+        return currentScript;
+    };
+
     if (isNone(root.WeJs)){
         var WeJs = {
             version : '0.9.3',
@@ -288,6 +306,13 @@
                     this.trigger('onload', this.preloads);
                 }
             },
+            define: function (callback) {
+                var script = getCurrentScript();
+                if (!script){throw new Error('no script loading')}
+                var src = script.getAttribute('data-src');
+                if (!src){throw new Error('script src error')}
+                callback.call(WeJs.exports[src]);
+            },
             imports: function(name){
                 return new importObj(name);
             },
@@ -395,6 +420,9 @@
         };
         root.imports = function(){
             return WeJs.imports.apply(WeJs, arguments);
+        };
+        root.define = function(){
+            return WeJs.define.apply(WeJs, arguments);
         };
     }
 

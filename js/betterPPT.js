@@ -133,8 +133,7 @@
                 var body = document.body;
                 var supported = ( pfx( "perspective" ) !== null ) &&
                     // Browser should support `classList` and `dataset` APIs
-                    ( body.classList ) &&
-                    ( body.dataset ) && ( ua.search( /(iphone)|(ipod)|(android)/ ) === -1 );
+                    ( body.classList ) && ( body.dataset );
                 if (!supported){
                     $('.betterPPT-unsupported').show();
                     this.obj.remove();
