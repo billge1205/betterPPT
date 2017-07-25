@@ -110,8 +110,8 @@
             }
             if (isArr(this.name) && isObj(ret)){
                 var exports = {};
-                for (var i in this.name){
-                    exports[this.name[i]] = ret[this.name[i]];
+                for (var i=0,name; name=this.name[i++];){
+                    exports[name] = ret[name];
                 }
                 return exports;
             }
@@ -177,8 +177,7 @@
                 }
             },
             checkDomain: function(url){
-                for (var i in this.domains){
-                    var domain = this.domains[i];
+                for (var i=0, domain; domain=this.domains[i++];){
                     if (url.indexOf(domain) === 0){
                         return true;
                     }
@@ -272,8 +271,7 @@
                 if (this.lists.length === 0){
                     return;
                 }
-                for (var i in this.lists){
-                    var require = this.lists[i];
+                for (var i=0,require; require = this.lists[i++];){
                     if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){
                         news.push(require);
                         continue;
@@ -282,8 +280,7 @@
                     if (require['waited'].length === 0){
                         var exports = [];
                         var end = true;
-                        for (var e in require['lists']){
-                            var list = require['lists'][e];
+                        for (var e=0,list; list = require['lists'][e++];){
                             if (this.exports[list].defines > 0){
                                 end = false;
                                 break;
@@ -336,9 +333,12 @@
                     hm.id = 'javascript-'+src;
                     hm.setAttribute('data-src', src);
                     hm.text = text;
+                    hm.readyState = 'interactive';
+                    currentScript = hm;
                     var s = d.getElementsByTagName("script")[0];
                     s.parentNode.insertBefore(hm, s);
 
+                    hm.readyState = 'complete';
                     this.modules[src].loaded = true;
                     this.exports[src].defines === 0 && this.run(src);
 
@@ -362,8 +362,7 @@
                 lists = isArr(lists) ? lists : [lists];
                 var self = this;
                 var waited = [];
-                for (var i in lists){
-                    var src = lists[i];
+                for (var i=0,src; src = lists[i++];){
                     var module = this.modules[src];
                     var path = this.getPath(src);
                     if (!path){
@@ -404,8 +403,8 @@
                     this.lists.push({lists:lists, waited:waited, callback:callback});
                 } else {
                     var exports = [];
-                    for (var e in lists){
-                        exports.push(this.getExport(lists[e]));
+                    for (var e=0,list; list = lists[e++];){
+                        exports.push(this.getExport(list));
                     }
                     callback.apply(this, exports);
                 }
