@@ -16,21 +16,183 @@
 }(this, function() {
     'use strict';
 
+    function isFn(fn) {
+        return 'function' === type(fn);
+    }
+
+    function in_array(needle, haystack) {
+        if(typeof needle === 'string' || typeof needle === 'number') {
+            for(var i in haystack) {
+                if(haystack[i] === needle) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    function type(obj) {
+        var o = {};
+        return o.toString.call(obj).replace(/\[object (\w+)\]/, '$1').toLowerCase();
+    }
+
+    var memoryDatas = [];
+
+    var pfx = ( function() {
+        var style = document.createElement( "dummy" ).style,
+            prefixes = "Webkit Moz O ms Khtml".split( " " ),
+            memory = {};
+        return function( prop ) {
+            if ( typeof memory[ prop ] === "undefined" ) {
+                var ucProp  = prop.charAt( 0 ).toUpperCase() + prop.substr( 1 ),
+                    props   = ( prop + " " + prefixes.join( ucProp + " " ) + ucProp ).split( " " );
+                memory[ prop ] = null;
+                for ( var i in props ) {
+                    if ( style[ props[ i ] ] !== undefined ) {
+                        memory[ prop ] = props[ i ];
+                        break;
+                    }
+                }
+            }
+            return memory[ prop ];
+        };
+    } )();
+    NodeList.prototype.each = function (callback) {
+        for ( var i in this ) {
+            if (isFn(this[i]) || i === 'length'){
+                continue;
+            }
+            if ( callback.call( this[i], i, this[i] ) === false ) {
+                break;
+            }
+        }
+        return this;
+    };
+    NodeList.prototype.toArray = function () {
+        return [].slice.call(this);
+    };
+
+    Element.prototype.setData = function (datas) {
+        var k = this.getAttribute('__keyData__');
+        var data = memoryDatas[k];
+        if (k === null || !data){
+            var key = memoryDatas.length;
+            this.setAttribute('__keyData__', key);
+            memoryDatas.push(datas);
+        } else {
+            for (var i in datas){
+                data[i] = datas[i];
+            }
+            memoryDatas[k] = data;
+        }
+        return this;
+    };
+    Element.prototype.getData = function (key) {
+        var k = this.getAttribute('__keyData__');
+        var data = memoryDatas[k];
+        return data ? data[key] : undefined;
+    };
+
+    Node.prototype.addClass = function (c) {
+        this.classList.add(c);
+        return this;
+    };
+    Node.prototype.removeClass = function (c) {
+        this.classList.remove(c);
+        return this;
+    };
+    Node.prototype.css = function( props ) {
+        var key, pkey;
+        for ( key in props ) {
+            if ( props.hasOwnProperty( key ) ) {
+                pkey = pfx( key );
+                if ( pkey !== null ) {
+                    this.style[ pkey ] = props[ key ];
+                }
+            }
+        }
+        return this;
+    };
+    Node.prototype.on = function (event, fn) {
+        var events = this.getData(event);
+        if (!events){
+            events = [];
+        }
+        events.push(fn);
+        var data = {};
+        data[event] = events;
+        this.setData(data);
+        this.addEventListener(event, fn, false);
+        return this;
+    };
+    Node.prototype.off = function (event) {
+        var events = this.getData(event);
+        if (!events){
+            return;
+        }
+        for (var i=0,fn; fn = events[i++];){
+            this.removeEventListener(event, fn);
+        }
+        var data = {};
+        data[event] = [];
+        this.setData(data);
+        return this;
+    };
+    var winEvent = [];
+    window.resize = function (fn) {
+        winEvent.push(fn);
+        window.addEventListener('resize', fn, false);
+    };
+    window.unResize = function () {
+        for (var i = 0, fn; fn = winEvent[i++];){
+            window.removeEventListener('resize', fn);
+        }
+        winEvent = [];
+    };
+    ['on', 'off', 'addClass', 'removeClass', 'css'].forEach(function (value,index,array) {
+        NodeList.prototype[value] = function () {
+            var args = arguments;
+            this.each(function (i, node) {
+                node[value].apply(node, args);
+            });
+            return this;
+        }
+    });
+    NodeList.prototype.index = function (elem) {
+        return this.toArray().indexOf(elem);
+    };
+
+    var filter = function( selector, context ) {
+        context = context || document;
+        return context.querySelector( selector );
+    };
+
+    var query = function( selector, context ) {
+        context = context || document;
+        return context.querySelectorAll( selector );
+    };
+
     var DoToastTimer;
     function toast(txt){
         clearTimeout(DoToastTimer);
-        if ($("#showToasts").length === 0){
-            $('body').append('<div class="showToasts" id="showToasts"></div>');
+        if (!filter("#showToasts")){
+            var div = document.createElement('div');
+            div.classList = "showToasts";
+            div.id = "showToasts";
+            document.body.appendChild(div);
         }
-        $("#showToasts").text(txt).show();
+        var obj = filter("#showToasts");
+        obj.innerText = txt;
+        obj.style.display = 'inline-block';
         DoToastTimer = setTimeout(function(){
-            $("#showToasts").text("").stop().hide(200);
+            obj.innerText = "";
+            obj.style.display = 'none';
         },2000);
     }
 
     function bindOverView(ppt) {
         function focusSection(n) {
-            var section = ppt.sections.eq(n);
+            var section = ppt.sections[n];
             ppt.sections.removeClass('active');
             section.addClass('active');
             ppt.sections.each(function (i) {
@@ -38,24 +200,24 @@
             });
         }
 
-        $(ppt.obj).on('mouseenter', 'section', function (event) {
+        query('section', ppt.obj).on('mouseenter', function (event) {
             ppt.current = ppt.sections.index(this);
             focusSection(ppt.current);
-        }).on('click', 'section', function (event) {
+        }).on('click', function (event) {
             ppt.current = ppt.sections.index(this);
             focusSection(ppt.current);
             ppt.review();
         });
-        $(document).bind('keyup', function (event) {
+        document.body.on('keyup', function (event) {
             if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27 || event.keyCode === 13) {
-                switch ( event.keyCode ) {
+                switch (event.keyCode) {
                     case 13: // Enter
                     case 27: // ESC
                         ppt.review();
                         break;
                     case 37: // Left
                         var prev = ppt.getPrev();
-                        if (prev === false){
+                        if (prev === false) {
                             return;
                         }
                         ppt.current = prev;
@@ -63,7 +225,7 @@
                         break;
                     case 39: // Right
                         var next = ppt.getNext();
-                        if (next === false){
+                        if (next === false) {
                             return;
                         }
                         ppt.current = next;
@@ -80,38 +242,38 @@
     }
 
     function unbindOverView(ppt) {
-        $(ppt.obj).off('mouseenter', 'section').off('click', 'section');
-        $(document).unbind('keyup');
+        query('section', ppt.obj).off('mouseenter').off('click');
+        document.body.off('keyup');
     }
 
     function bindResize(ppt){
-        $(window).bind('resize', function(){
+        window.resize(function(){
             ppt.resize();
         });
     }
 
     function unbindResize() {
-        $(window).unbind('resize');
+        window.unResize();
     }
 
     function transform(obj, data, transition) {
         typeof transition === 'undefined' && (transition = false);
-        var d = $(obj).data('transform');
+        var d = obj.getData('transform');
         d = d || {};
         d = Object.assign(d, data);
-        $(obj).data('transform', d);
-        transition && $(obj).addClass('transition') || $(obj).removeClass('transition');
+        obj.setData({transform: d});
+        transition && obj.addClass('transition') || obj.removeClass('transition');
         var x=d.x||0, y=d.y||0, z=d.z||0,
             scale=typeof d.scale==='undefined'?'1':d.scale,
             rX=d.rotateX||0,rY=d.rotateY||0,rZ=d.rotateZ||0;
-        $(obj).css('transform', 'translate3d('+x+'px, '+y+'px, '+z+'px) scale('+scale+') rotateX('+rX+'deg) rotateY('+rY+'deg) rotateZ('+rZ+'deg)');
+        obj.css({'transform': 'translate3d('+x+'px, '+y+'px, '+z+'px) scale('+scale+') rotateX('+rX+'deg) rotateY('+rY+'deg) rotateZ('+rZ+'deg)'});
     }
 
     var betterPPT = function(obj){
         if(!(this instanceof betterPPT)) return new betterPPT(obj);
 
-        this.obj = $(obj);
-        this.sections = this.obj.find('section');
+        this.obj = filter(obj);
+        this.sections = query('section', this.obj);
         this.click = true;
         this.circle = false;
         this.anchor = true;
@@ -122,25 +284,6 @@
         this.x = 0;
         this.y = 0;
         this.init = function(config){
-            var pfx = ( function() {
-                var style = document.createElement( "dummy" ).style,
-                    prefixes = "Webkit Moz O ms Khtml".split( " " ),
-                    memory = {};
-                return function( prop ) {
-                    if ( typeof memory[ prop ] === "undefined" ) {
-                        var ucProp  = prop.charAt( 0 ).toUpperCase() + prop.substr( 1 ),
-                            props   = ( prop + " " + prefixes.join( ucProp + " " ) + ucProp ).split( " " );
-                        memory[ prop ] = null;
-                        for ( var i in props ) {
-                            if ( style[ props[ i ] ] !== undefined ) {
-                                memory[ prop ] = props[ i ];
-                                break;
-                            }
-                        }
-                    }
-                    return memory[ prop ];
-                };
-            } )();
             // check support
             var ua = navigator.userAgent.toLowerCase();
             var body = document.body;
@@ -148,7 +291,7 @@
                 // Browser should support `classList` and `dataset` APIs
                 ( body.classList ) && ( body.dataset );
             if (!supported){
-                $('.betterPPT-unsupported').show();
+                filter('.betterPPT-unsupported').style.display = 'block';
                 this.obj.remove();
                 return;
             }
@@ -165,12 +308,12 @@
             var self = this;
             this.sections.each(function (i, section) {
                 var steps = {indexs:[0], steps:{}, init: [], current:0} ;
-                $(section).find('[step]').each(function () {
-                    var index = parseInt($(this).attr('step'));
+                query('[step]', section).each(function () {
+                    var index = parseInt(this.getAttribute('step'));
                     if (index === 0){
                         steps.init.push(this);
                     } else {
-                        if ($.inArray(index, steps.indexs) === -1){
+                        if (in_array(index, steps.indexs) === -1){
                             steps.indexs.push(index);
                             steps['steps'][index] = [];
                         }
@@ -212,7 +355,7 @@
             //奇怪的逻辑 不用settimeout 过度就有问题
             setTimeout(function () {
                 self.sections.each(function (i,section) {
-                    transform($(section), {rotateY: 50}, true);
+                    transform(section, {rotateY: 50}, true);
                 });
                 transform(self.obj, {scale: 0.6}, true);
             },0);
@@ -228,10 +371,10 @@
             }
             this.obj.removeClass('overview');
             this.sections.each(function (i,section) {
-                transform($(section), {rotateY: 0}, true);
+                transform(section, {rotateY: 0}, true);
             });
             transform(this.obj, {scale: 1}, true);
-            this.sections.eq(this.current).css('z-index', this.sections.length+100);
+            this.sections[this.current].css('z-index', this.sections.length+100);
             unbindOverView(this);
             var self = this;
             setTimeout(function () {
@@ -312,9 +455,9 @@
         this.resize = function(n, css){
             typeof css === "undefined" && (css = true);
             typeof n === "undefined" && (n = this.current);
-            var section = this.sections.eq(n);
-            var wh = $(window).height();
-            var ww = $(window).width();
+            var section = this.sections[n];
+            var wh = window.innerHeight;
+            var ww = window.innerWidth;
             var h = wh * 0.95;
             var w = ww * 0.95;
             w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
@@ -324,7 +467,7 @@
             var pt = h/30;
             var pl = w/30;
             if (css){
-                section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px', 'z-index':n});
+                section.css({width: w+'px', height: h+'px', 'font-size': size+'px', padding: pt+'px '+pl+'px', 'z-index':n});
                 transform(section, {x:x,y:y}, false);
             } else {
                 transform(section, {x:x,y:y}, true);
@@ -333,25 +476,25 @@
         this.show = function(next){
             next = typeof next === "undefined" ? true : next;
             this.sections.removeClass('active');
-            var section = this.sections.eq(this.current);
-            var wh = $(window).height();
-            var ww = $(window).width();
+            var section = this.sections[this.current];
+            var wh = window.innerHeight;
+            var ww = window.innerWidth;
             var h = wh * 0.95;
             var w = ww * 0.95;
             w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
             var size = h/20;
             var pt = h/30;
             var pl = w/30;
-            section.css({width: w, height: h, 'font-size': size+'px', padding: pt+'px '+pl+'px'});
+            section.css({width: w+'px', height: h+'px', 'font-size': size+'px', padding: pt+'px '+pl+'px'});
             var y = -1*h/2 - this.y;
             var x = -1*w/2 - this.x;
             var left = 0;
             var up = 0;
 
-            var from = next !== 'first' ? section.attr('from') : '';
+            var from = next !== 'first' ? section.getAttribute('from') : '';
             // 回退逻辑
             if (!next){
-                from = this.sections.eq(this.last).attr('from');
+                from = this.sections[this.last].getAttribute('from');
                 ww = -1*ww;
                 wh = -1*wh;
                 if (from === 'zoomin'){from='zoomout'}
@@ -390,13 +533,13 @@
                     transform(section, {x:x,y:y}, false);
                     break;
             }
-            if ($.inArray(from, ['left', 'right', 'top', 'bottom']) !== -1){
+            if (in_array(from, ['left', 'right', 'top', 'bottom']) !== -1){
                 this.x -= left;
                 this.y -= up;
                 transform(this.obj, {x:this.x,y:this.y}, true);
             }
-            this.sections.css('z-index', 0);
-            section.addClass('active').css('z-index', 9999);
+            this.sections.css({'z-index': 0});
+            section.addClass('active').css({'z-index': 9999});
             this.sethash();
             // init step
             var step = this.steps[this.current];
@@ -415,8 +558,8 @@
             }
             for (var i in steps){
                 var obj = steps[i];
-                $(obj).addClass('active');
-                var action = $(obj).attr('action');
+                obj.addClass('active');
+                var action = obj.getAttribute('action');
                 if (action){
                     action = eval(action);
                     action.call(obj, true);
@@ -428,8 +571,8 @@
             var steps = step.steps[step.indexs[step.current]];
             for (var i in steps){
                 var obj = steps[i];
-                $(obj).removeClass('active');
-                var action = $(obj).attr('action');
+                obj.removeClass('active');
+                var action = obj.getAttribute('action');
                 if (action){
                     action = eval(action);
                     action.call(obj, false);
@@ -439,19 +582,19 @@
         this.bindCheck = function(){
             var self = this;
             if (this.click){
-                $(document).bind('click', function () {
+                document.body.on('click', function () {
                     self.step();
                 });
             }
             // 键盘事件绑定
-            $(document).bind('keydown', function (event) {
+            document.body.on('keydown', function (event) {
                 if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT'){
                     return true;
                 }
                 if (event.keyCode >= 37 && event.keyCode <= 40  || event.keyCode === 27) {
                     event.preventDefault(); return false;
                 }
-            }).bind('keyup', function (event) {
+            }).on('keyup', function (event) {
                 if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT'){
                     return true;
                 }
@@ -479,8 +622,8 @@
             });
         };
         this.unbindCheck = function() {
-            $(document).unbind('click').unbind('keyup');
-        }
+            document.body.off('click').off('keyup').off('keydown');
+        };
         return this;
     };
     return betterPPT;

@@ -72,26 +72,3 @@
     max-width: 1200px;
 }
 /*图片展示*/
-/*悬浮提示*/
-.showToasts{
-    min-width: 200px;
-    max-width: 600px;
-    text-align: center;
-    padding: 20px 50px;
-    position: fixed;
-    z-index: 1110;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    border-radius: 10px;
-    font-size: 30px;
-    color: #fff;
-    background-color: rgba(0,0,0,.5);
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    cursor: default;
-    display: none;
-}
-/*悬浮提示*/
