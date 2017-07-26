@@ -128,7 +128,7 @@
     Node.prototype.off = function (event) {
         var events = this.getData(event);
         if (!events){
-            return;
+            return this;
         }
         for (var i=0,fn; fn = events[i++];){
             this.removeEventListener(event, fn);
