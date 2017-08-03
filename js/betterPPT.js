@@ -802,38 +802,46 @@
             filter("#showImage").style.display = 'block';
             var imageZoom = 1;
             var imageWidth = filter("#showImage").offsetWidth;
+            var isWheel = false;
             // 缩放
             document.body.off('mousewheel').on('mousewheel', function (event) {
-                var orgEvent = event || window.event, delta, deltaX = 0, deltaY = 0;
-                if ( 'detail'      in orgEvent ) { deltaY = orgEvent.detail * -1;      }
-                if ( 'wheelDelta'  in orgEvent ) { deltaY = orgEvent.wheelDelta;       }
-                if ( 'wheelDeltaY' in orgEvent ) { deltaY = orgEvent.wheelDeltaY;      }
-                if ( 'wheelDeltaX' in orgEvent ) { deltaX = orgEvent.wheelDeltaX * -1; }
-                // Firefox < 17 horizontal scrolling related to DOMMouseScroll event
-                if ( 'axis' in orgEvent && orgEvent.axis === orgEvent.HORIZONTAL_AXIS ) {
-                    deltaX = deltaY * -1;
-                    deltaY = 0;
+                if (!isWheel){
+                    isWheel = true;
+                    // 防止触发过快
+                    setTimeout(function () {
+                        isWheel = false;
+                    },80);
+                    var orgEvent = event || window.event, delta, deltaX = 0, deltaY = 0;
+                    if ( 'detail'      in orgEvent ) { deltaY = orgEvent.detail * -1;      }
+                    if ( 'wheelDelta'  in orgEvent ) { deltaY = orgEvent.wheelDelta;       }
+                    if ( 'wheelDeltaY' in orgEvent ) { deltaY = orgEvent.wheelDeltaY;      }
+                    if ( 'wheelDeltaX' in orgEvent ) { deltaX = orgEvent.wheelDeltaX * -1; }
+                    // Firefox < 17 horizontal scrolling related to DOMMouseScroll event
+                    if ( 'axis' in orgEvent && orgEvent.axis === orgEvent.HORIZONTAL_AXIS ) {
+                        deltaX = deltaY * -1;
+                        deltaY = 0;
+                    }
+                    // Set delta to be deltaY or deltaX if deltaY is 0 for backwards compatabilitiy
+                    delta = deltaY === 0 ? deltaX : deltaY;
+                    // New school wheel delta (wheel event)
+                    if ( 'deltaY' in orgEvent ) {
+                        deltaY = orgEvent.deltaY * -1;
+                        delta  = deltaY;
+                    }
+                    if ( 'deltaX' in orgEvent ) {
+                        deltaX = orgEvent.deltaX;
+                        if ( deltaY === 0 ) { delta  = deltaX * -1; }
+                    }
+                    if(delta>0 && filter("#showImage").offsetWidth < window.innerWidth && imageZoom < 4){
+                        imageZoom += 0.1;
+                    }else if(delta<0 && imageZoom > 0.2){
+                        imageZoom -= 0.1;
+                        imageZoom = imageZoom <= 0 ? 0 : imageZoom;
+                    }
+                    imageHeight();
+                    filter("#showImage").css({"width": imageZoom.toFixed(1)*imageWidth+"px"});
+                    toast(parseInt(imageZoom.toFixed(1)*100)+"%");
                 }
-                // Set delta to be deltaY or deltaX if deltaY is 0 for backwards compatabilitiy
-                delta = deltaY === 0 ? deltaX : deltaY;
-                // New school wheel delta (wheel event)
-                if ( 'deltaY' in orgEvent ) {
-                    deltaY = orgEvent.deltaY * -1;
-                    delta  = deltaY;
-                }
-                if ( 'deltaX' in orgEvent ) {
-                    deltaX = orgEvent.deltaX;
-                    if ( deltaY === 0 ) { delta  = deltaX * -1; }
-                }
-                if(delta>0 && filter("#showImage").offsetWidth < window.innerWidth && imageZoom < 4){
-                    imageZoom += 0.1;
-                }else if(delta<0 && imageZoom > 0.2){
-                    imageZoom -= 0.1;
-                    imageZoom = imageZoom <= 0 ? 0 : imageZoom;
-                }
-                imageHeight();
-                filter("#showImage").css({"width": imageZoom.toFixed(1)*imageWidth+"px"});
-                toast(parseInt(imageZoom.toFixed(1)*100)+"%");
             });
         }
 
