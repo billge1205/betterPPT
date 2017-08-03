@@ -150,6 +150,9 @@
         return this;
     };
     Node.prototype.on = function (event, fn) {
+        if (event === 'mousewheel' && window.navigator.userAgent.indexOf('Firefox')!==-1){
+            event = 'DOMMouseScroll';
+        }
         var events = this.getData(event);
         if (!events){
             events = [];
@@ -162,6 +165,9 @@
         return this;
     };
     Node.prototype.off = function (event) {
+        if (event === 'mousewheel' && window.navigator.userAgent.indexOf('Firefox')!==-1){
+            event = 'DOMMouseScroll';
+        }
         var events = this.getData(event);
         if (!events){
             return this;
@@ -751,7 +757,7 @@
         }
 
         function hideImages(){
-            document.body.off('keyup');
+            document.body.off('keyup').off('mousewheel');
             filter("#showImageBox").style.display='none';
             setTimeout(function () {
                 ppt.bindCheck();
@@ -775,20 +781,60 @@
                 }
             }
             var src = imageArr[imageIndex];
-            filter("#showImage").setAttribute("src", src)
+            filter("#showImage").setAttribute("src", src);
             filter("#showImage").removeAttribute("moveImg");
-            imageOnload();
+            filter("#showImage").onload = imageOnload;
+        }
+
+        function imageHeight() {
+            if(filter("#showImage").offsetHeight > window.innerHeight){
+                filter("#showImage").css({top: 0, "transform": "translate(-50%,0)"}).classList.add("moveImg");
+                bindImageMove();
+            }else{
+                filter("#showImage").css({top: "50%", "transform": "translate(-50%,-50%)"}).classList.remove("moveImg");
+                filter("img#showImage").off('mousedown').off('mousemove').off('mouseup').off('mouseleave');
+            }
         }
 
         function imageOnload(){
-            if(filter("#showImage").offsetHeight > window.innerHeight){
-                filter("#showImage").css({"top":0,"transform": "translate(-50%,0)"}).classList.add("moveImg");
-                bindImageMove();
-            }else{
-                filter("#showImage").css({"top":"50%","transform": "translate(-50%,-50%)"}).classList.remove("moveImg");
-            }
+            imageHeight();
             filter("#showImage").style.width = "auto";
             filter("#showImage").style.display = 'block';
+            var imageZoom = 1;
+            var imageWidth = filter("#showImage").offsetWidth;
+            // 缩放
+            document.body.off('mousewheel').on('mousewheel', function (event) {
+                var orgEvent = event || window.event, delta, deltaX = 0, deltaY = 0;
+                if ( 'detail'      in orgEvent ) { deltaY = orgEvent.detail * -1;      }
+                if ( 'wheelDelta'  in orgEvent ) { deltaY = orgEvent.wheelDelta;       }
+                if ( 'wheelDeltaY' in orgEvent ) { deltaY = orgEvent.wheelDeltaY;      }
+                if ( 'wheelDeltaX' in orgEvent ) { deltaX = orgEvent.wheelDeltaX * -1; }
+                // Firefox < 17 horizontal scrolling related to DOMMouseScroll event
+                if ( 'axis' in orgEvent && orgEvent.axis === orgEvent.HORIZONTAL_AXIS ) {
+                    deltaX = deltaY * -1;
+                    deltaY = 0;
+                }
+                // Set delta to be deltaY or deltaX if deltaY is 0 for backwards compatabilitiy
+                delta = deltaY === 0 ? deltaX : deltaY;
+                // New school wheel delta (wheel event)
+                if ( 'deltaY' in orgEvent ) {
+                    deltaY = orgEvent.deltaY * -1;
+                    delta  = deltaY;
+                }
+                if ( 'deltaX' in orgEvent ) {
+                    deltaX = orgEvent.deltaX;
+                    if ( deltaY === 0 ) { delta  = deltaX * -1; }
+                }
+                if(delta>0 && filter("#showImage").offsetWidth < window.innerWidth && imageZoom < 4){
+                    imageZoom += 0.1;
+                }else if(delta<0 && imageZoom > 0.2){
+                    imageZoom -= 0.1;
+                    imageZoom = imageZoom <= 0 ? 0 : imageZoom;
+                }
+                imageHeight();
+                filter("#showImage").css({"width": imageZoom.toFixed(1)*imageWidth+"px"});
+                toast(parseInt(imageZoom.toFixed(1)*100)+"%");
+            });
         }
 
         function bindImageMove(){
