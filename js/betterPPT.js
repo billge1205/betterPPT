@@ -320,7 +320,7 @@
         this.circle = false;
         this.anchor = true;
         this.showImg = true;
-        this.current = null;
+        this.current = 0;
         this.steps = [];
         this.last = null;
         this.oView = false;
