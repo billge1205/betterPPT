@@ -16,8 +16,24 @@
 }(this, function() {
     'use strict';
 
+    function isNone(o){
+        return 'undefined' === type(o);
+    }
+
     function isFn(fn) {
         return 'function' === type(fn);
+    }
+
+    function isObj(o) {
+        return 'object' === type(o);
+    }
+
+    function isArr(a) {
+        return 'array' === type(a);
+    }
+
+    function isString(s) {
+        return 'string' === type(s);
     }
 
     function in_array(needle, haystack) {
@@ -57,19 +73,22 @@
             return memory[ prop ];
         };
     } )();
-    NodeList.prototype.each = function (callback) {
-        for ( var i in this ) {
-            if (isFn(this[i]) || i === 'length'){
-                continue;
-            }
-            if ( callback.call( this[i], i, this[i] ) === false ) {
-                break;
-            }
-        }
-        return this;
-    };
     NodeList.prototype.toArray = function () {
         return [].slice.call(this);
+    };
+    NodeList.prototype.filter = function (filter) {
+        switch (filter){
+            case 'visible':
+                var nodes = [];
+                this.forEach(function (node) {
+                    var style = window.getComputedStyle(node);
+                    if (style.visibility === 'visible'){
+                        nodes.push(node);
+                    }
+                });
+                return nodes;
+        }
+        return this;
     };
 
     Element.prototype.setData = function (datas) {
@@ -101,6 +120,23 @@
         this.classList.remove(c);
         return this;
     };
+    Node.prototype.remove = function () {
+        this.parentNode.removeChild(this);
+        return this;
+    };
+    Node.prototype.is = function (context) {
+        return query(context).index(this) >= 0;
+    };
+    Node.prototype.parent = function (context) {
+        var dom = this;
+        while (!dom.is(context)){
+            dom = dom.parentNode;
+            if (dom === null){
+                return null;
+            }
+        }
+        return dom;
+    };
     Node.prototype.css = function( props ) {
         var key, pkey;
         for ( key in props ) {
@@ -128,7 +164,7 @@
     Node.prototype.off = function (event) {
         var events = this.getData(event);
         if (!events){
-            return;
+            return this;
         }
         for (var i=0,fn; fn = events[i++];){
             this.removeEventListener(event, fn);
@@ -149,15 +185,16 @@
         }
         winEvent = [];
     };
-    ['on', 'off', 'addClass', 'removeClass', 'css'].forEach(function (value,index,array) {
+    ['on', 'off', 'addClass', 'removeClass', 'css', 'remove'].forEach(function (value,index,array) {
         NodeList.prototype[value] = function () {
             var args = arguments;
-            this.each(function (i, node) {
+            this.forEach(function (node) {
                 node[value].apply(node, args);
             });
             return this;
         }
     });
+
     NodeList.prototype.index = function (elem) {
         return this.toArray().indexOf(elem);
     };
@@ -167,9 +204,14 @@
         return context.querySelector( selector );
     };
 
-    var query = function( selector, context ) {
+    var query = function( selector, context, filter) {
+        isNone(filter) && (filter = false);
         context = context || document;
-        return context.querySelectorAll( selector );
+        var nodes = context.querySelectorAll( selector );
+        if (nodes && filter){
+            return nodes.filter(filter);
+        }
+        return nodes;
     };
 
     var DoToastTimer;
@@ -195,7 +237,7 @@
             var section = ppt.sections[n];
             ppt.sections.removeClass('active');
             section.addClass('active');
-            ppt.sections.each(function (i) {
+            ppt.sections.forEach(function (value, i) {
                 ppt.resize(i, false);
             });
         }
@@ -277,15 +319,29 @@
         this.click = true;
         this.circle = false;
         this.anchor = true;
+        this.showImg = true;
         this.current = null;
         this.steps = [];
         this.last = null;
         this.oView = false;
         this.x = 0;
         this.y = 0;
-        this.init = function(config){
+        this.config = function (config) {
+            config = config || {};
+            var n = config.current || this.gethash();
+            typeof config.circle === 'undefined' || (this.circle = config.circle);
+            typeof config.click === 'undefined' || (this.click = config.click);
+            typeof config.anchor === 'undefined' || (this.anchor = config.anchor);
+            typeof config.showImg === 'undefined' || (this.showImg = config.showImg);
+            if (n > this.sections.length){
+                this.current = 0;
+            } else {
+                this.current = n;
+            }
+            return this;
+        };
+        this.init = function(){
             // check support
-            var ua = navigator.userAgent.toLowerCase();
             var body = document.body;
             var supported = ( pfx( "perspective" ) !== null ) &&
                 // Browser should support `classList` and `dataset` APIs
@@ -295,29 +351,19 @@
                 this.obj.remove();
                 return;
             }
-            config = config || {};
-            var n = config.current || this.gethash();
-            typeof config.circle === 'undefined' || (this.circle = config.circle);
-            typeof config.click === 'undefined' || (this.click = config.click);
-            typeof config.anchor === 'undefined' || (this.anchor = config.anchor);
-            if (n > this.sections.length){
-                this.current = 0;
-            } else {
-                this.current = n;
-            }
             var self = this;
-            this.sections.each(function (i, section) {
+            this.sections.forEach(function (section, i) {
                 var steps = {indexs:[0], steps:{}, init: [], current:0} ;
-                query('[step]', section).each(function () {
-                    var index = parseInt(this.getAttribute('step'));
+                query('[step]', section).forEach(function (step) {
+                    var index = parseInt(step.getAttribute('step'));
                     if (index === 0){
-                        steps.init.push(this);
+                        steps.init.push(step);
                     } else {
                         if (in_array(index, steps.indexs) === -1){
                             steps.indexs.push(index);
                             steps['steps'][index] = [];
                         }
-                        steps['steps'][index].push(this);
+                        steps['steps'][index].push(step);
                     }
                 });
                 steps.indexs.sort();
@@ -326,6 +372,18 @@
             this.show('first');
             this.bindCheck();
             bindResize(this);
+            if (this.showImg){
+                query('section img[src]').on('click', function () {
+                    if (!self.oView){
+                        var images = [], index= query('img', this.parent('section'), 'visible').indexOf(this);
+                        query('img', this.parent('section'), 'visible').forEach(function (img) {
+                            images.push(img.getAttribute('src'));
+                        });
+                        showImages({url:images,index:index});
+                    }
+                });
+            }
+            return this;
         };
         this.reload = function(n){
             // TODO
@@ -348,17 +406,17 @@
             var self = this;
             this.x = this.y = 0;
             transform(this.obj, {x:0,y:0}, false);
-            this.sections.each(function (i) {
+            this.sections.forEach(function (section, i) {
                 self.resize(i);
             });
             this.obj.addClass('overview');
             //奇怪的逻辑 不用settimeout 过度就有问题
             setTimeout(function () {
-                self.sections.each(function (i,section) {
+                self.sections.forEach(function (section, i) {
                     transform(section, {rotateY: 50}, true);
                 });
                 transform(self.obj, {scale: 0.6}, true);
-            },0);
+            },10);
             this.unbindCheck();
             unbindResize(this);
             bindOverView(this);
@@ -370,7 +428,7 @@
                 this.oView = false;
             }
             this.obj.removeClass('overview');
-            this.sections.each(function (i,section) {
+            this.sections.forEach(function (section, i) {
                 transform(section, {rotateY: 0}, true);
             });
             transform(this.obj, {scale: 1}, true);
@@ -380,7 +438,7 @@
             setTimeout(function () {
                 self.bindCheck();
                 bindResize(self);
-            }, 0);
+            }, 10);
             this.sethash();
         };
         this.getPrev = function () {
@@ -425,6 +483,7 @@
                 step.current++;
                 this.showStep();
             }
+            return this;
         };
         this.back = function(){
             this.hideStep();
@@ -434,6 +493,7 @@
             } else {
                 step.current--;
             }
+            return this;
         };
         this.prev = function(){
             this.last = this.current;
@@ -443,6 +503,7 @@
             }
             this.current = prev;
             this.show(false);
+            return this;
         };
         this.next = function(){
             var next = this.getNext();
@@ -451,6 +512,7 @@
             }
             this.current = next;
             this.show();
+            return this;
         };
         this.resize = function(n, css){
             typeof css === "undefined" && (css = true);
@@ -546,6 +608,7 @@
             if (step.current === 0){
                 this.showStep(true);
             }
+            return this;
         };
         this.showStep = function (init) {
             typeof init === "undefined" && (init = false);
@@ -565,6 +628,7 @@
                     action.call(obj, true);
                 }
             }
+            return this;
         };
         this.hideStep = function () {
             var step = this.steps[this.current];
@@ -578,6 +642,7 @@
                     action.call(obj, false);
                 }
             }
+            return this;
         };
         this.bindCheck = function(){
             var self = this;
@@ -620,10 +685,138 @@
                     return false;
                 }
             });
+            return this;
         };
         this.unbindCheck = function() {
-            document.body.off('click').off('keyup').off('keydown');
+            document.body.off('click').off('keyup');
+            return this;
         };
+
+        var ppt = this;
+
+        //图片展示
+        document.ondragstart=function() {return false;}; // 阻止<img>在留浏览器中拖动打开新窗口
+        var imageArr = [];
+        var imageIndex = 0;
+        var imageTop = 0;
+
+        function showImages(options){
+            filter("#showImageBox") && filter("#showImageBox").remove();
+            var model = document.createElement('div');
+            model.classList = "showImageBox";
+            model.id = "showImageBox";
+            model.innerHTML = '<span class="showImage-left" id="showImage-left"></span>'+
+                '<span class="showImage-right" id="showImage-right"></span>'+
+                '<span class="showImage-close" id="showImage-close">×</span>'+
+                '<img src="" class="showImage" id="showImage" draggable="false">';
+            document.body.appendChild(model);
+            filter("#showImage-left").on('click', function(){
+                changeImage('left');
+            });
+            filter("#showImage-right").on('click', function(){
+                changeImage('right')
+            });
+            filter("#showImage-close").on('click', function(){
+                hideImages();
+            });
+            document.getElementById("showImage").onerror = function (){
+                this.src = "data:image/jpeg;base64,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";
+            };
+            options.scrollValue = 100;
+            imageArr = options.url;
+            imageIndex = options.index;
+            filter("#showImageBox").style.display = 'block';
+            changeImage();
+            ppt.unbindCheck();
+            document.body.on('keyup', function (event) {
+                if (event.keyCode >= 37 && event.keyCode <= 40 || event.keyCode === 27) {
+                    switch ( event.keyCode ) {
+                        case 27: // ESC
+                            hideImages();
+                            break;
+                        case 37: // Left
+                            changeImage('left');
+                            break;
+                        case 39: // Right
+                            changeImage('right');
+                            break;
+                        case 38: // Up
+                        case 40: // Down
+                            break;
+                    }
+                    event.preventDefault();
+                    return false;
+                }
+            })
+        }
+
+        function hideImages(){
+            document.body.off('keyup');
+            filter("#showImageBox").style.display='none';
+            setTimeout(function () {
+                ppt.bindCheck();
+            },10);
+        }
+
+        function changeImage(flag){
+            if (flag === "left"){
+                imageIndex --;
+                if(imageIndex < 0){
+                    imageIndex = 0;
+                    toast("已是首张图片");
+                    return;
+                }
+            } else if(flag === "right") {
+                imageIndex ++;
+                if (imageIndex > imageArr.length-1){
+                    imageIndex = imageArr.length-1;
+                    toast("没有更多图片");
+                    return;
+                }
+            }
+            var src = imageArr[imageIndex];
+            filter("#showImage").setAttribute("src", src)
+            filter("#showImage").removeAttribute("moveImg");
+            imageOnload();
+        }
+
+        function imageOnload(){
+            if(filter("#showImage").offsetHeight > window.innerHeight){
+                filter("#showImage").css({"top":0,"transform": "translate(-50%,0)"}).classList.add("moveImg");
+                bindImageMove();
+            }else{
+                filter("#showImage").css({"top":"50%","transform": "translate(-50%,-50%)"}).classList.remove("moveImg");
+            }
+            filter("#showImage").style.width = "auto";
+            filter("#showImage").style.display = 'block';
+        }
+
+        function bindImageMove(){
+            var y;
+            var f;
+            filter("img#showImage.moveImg").off('mousedown').off('mousemove').off('mouseup').off('mouseleave');
+            filter("img#showImage.moveImg").on('mousedown', function(e){
+                imageTop = parseInt(this.style.top);
+                y = e.clientY;
+                f = true;
+            });
+            filter("img#showImage.moveImg").on('mousemove', function(e){
+                if (f){
+                    var Y = e.clientY;
+                    var T = imageTop + (Y-y);
+                    T = Math.min(T,0);
+                    T = Math.max(T, -parseInt(filter("img#showImage.moveImg").offsetHeight - window.innerHeight));
+                    filter("img#showImage.moveImg").css({"top": T+'px'});
+                }
+            });
+            filter("img#showImage.moveImg").on('mouseup', function(e){
+                f = false;
+            });
+            filter("img#showImage.moveImg").on('mouseleave', function(e){
+                f = false;
+            });
+        }
+
         return this;
     };
     return betterPPT;
