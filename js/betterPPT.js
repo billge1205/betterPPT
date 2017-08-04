@@ -310,6 +310,7 @@
 
     function bindResize(ppt){
         window.resize(function(){
+            ppt.removeTmp();
             ppt.resize();
         });
     }
@@ -418,6 +419,7 @@
             return location.hash ? parseInt(location.hash.substring(1)) : 0;
         };
         this.overview = function(){
+            this.removeTmp();
             if (this.oView){
                 return;
             } else {
@@ -635,7 +637,8 @@
             query('.tmpSection', this.obj).remove();
         };
         this.stepAction = function (obj, from, callback) {
-            if (in_array(from, ['left', 'right', 'top', 'bottom'])){
+            var top,left;
+            if (in_array(from, ['left', 'right', 'top', 'bottom', 'opacity'])){
                 var dom = obj.cloneNode(true);
                 var style = window.getComputedStyle(obj);
                 dom.style.width = style.width;
@@ -643,48 +646,46 @@
                 // dom.style['-webkit-margin-before'] = 0;
                 // dom.style['-webkit-margin-after'] = 0;
                 dom.removeAttribute('step');
+                left = obj.sectionLeft('section');
+                dom.style.left = left + 'px';
+                top = obj.sectionTop('section');
+                dom.style.top = top + 'px';
             }
             switch (from){
                 case 'left':
-                    dom.style.left = obj.sectionLeft('section')-window.innerWidth+'px';
-                    dom.style.top = obj.sectionTop('section')+'px';
-                    obj.parent('section').appendChild(dom);
-                    dom.addClass('tmpSection');
-                    dom.style.left = obj.sectionLeft('section')+'px';
+                    dom.style.left = left - window.innerWidth + 'px';
                     break;
 
                 case 'right':
-                    dom.style.left = obj.sectionLeft('section')+window.innerWidth+'px';
-                    dom.style.top = obj.sectionTop('section')+'px';
-                    obj.parent('section').appendChild(dom);
-                    dom.addClass('tmpSection');
-                    dom.style.left = obj.sectionLeft('section')+'px';
+                    dom.style.left = left + window.innerWidth + 'px';
                     break;
 
                 case 'top':
-                    dom.style.left = obj.sectionLeft('section')+'px';
-                    dom.style.top = obj.sectionTop('section')-window.innerHeight+'px';
-                    obj.parent('section').appendChild(dom);
-                    dom.addClass('tmpSection');
-                    dom.style.top = obj.sectionTop('section')+'px';
+                    dom.style.top = top - window.innerHeight + 'px';
                     break;
 
                 case 'bottom':
-                    dom.style.left = obj.sectionLeft('section')+'px';
-                    dom.style.top = obj.sectionTop('section')+window.innerHeight+'px';
-                    obj.parent('section').appendChild(dom);
-                    dom.addClass('tmpSection');
-                    dom.style.top = obj.sectionTop('section')+'px';
+                    dom.style.top = top + window.innerHeight + 'px';
+                    break;
+
+                case 'opacity':
                     break;
 
                 default:
                     callback(obj);
                     return;
             }
+            obj.parent('section').appendChild(dom);
+            dom.addClass('tmpSection');
+            setTimeout(function () {
+                dom.style.left = left+'px';
+                dom.style.top = top+'px';
+            }, 10);
+
             setTimeout(function () {
                 dom.remove();
                 callback(obj);
-            }, 1000);
+            }, 1010);
         };
         this.showStep = function (init) {
             typeof init === "undefined" && (init = false);
