@@ -638,7 +638,7 @@
         };
         this.stepAction = function (obj, from, callback) {
             var top,left;
-            if (in_array(from, ['left', 'right', 'top', 'bottom', 'opacity'])){
+            if (in_array(from, ['left', 'right', 'top', 'bottom', 'opacity', 'zoom'])){
                 var dom = obj.cloneNode(true);
                 var style = window.getComputedStyle(obj);
                 dom.style.width = style.width;
@@ -669,18 +669,41 @@
                     break;
 
                 case 'opacity':
+                    dom.style.opacity = 0;
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    setTimeout(function () {
+                        dom.style.opacity = 1;
+                    }, 10);
+                    break;
+
+                case 'zoom':
+                    dom.style.left = left + parseInt(dom.style.width)/2 + 'px';
+                    dom.style.top = top + parseInt(dom.style.height)/2 + 'px';
+                    dom.style.width = 0;
+                    dom.style.height = 0;
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    setTimeout(function () {
+                        dom.style.width = style.width;
+                        dom.style.height = style.height;
+                        dom.style.left = left + 'px';
+                        dom.style.top = top + 'px';
+                    }, 10);
                     break;
 
                 default:
                     callback(obj);
                     return;
             }
-            obj.parent('section').appendChild(dom);
-            dom.addClass('tmpSection');
-            setTimeout(function () {
-                dom.style.left = left+'px';
-                dom.style.top = top+'px';
-            }, 10);
+            if (in_array(from, ['left', 'right', 'top', 'bottom'])){
+                obj.parent('section').appendChild(dom);
+                dom.addClass('tmpSection');
+                setTimeout(function () {
+                    dom.style.left = left+'px';
+                    dom.style.top = top+'px';
+                }, 10);
+            }
 
             setTimeout(function () {
                 dom.remove();
