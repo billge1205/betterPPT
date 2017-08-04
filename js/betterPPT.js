@@ -91,6 +91,20 @@
         return this;
     };
 
+    Element.prototype.sectionLeft = function (obj) {
+        obj = obj || 'body';
+        if (this.offsetParent.is(obj)){
+            return this.offsetLeft;
+        }
+        return this.offsetLeft + this.offsetParent.sectionLeft();
+    };
+    Element.prototype.sectionTop = function (obj) {
+        obj = obj || 'body';
+        if (this.offsetParent.is(obj)){
+            return this.offsetTop;
+        }
+        return this.offsetTop + this.offsetParent.sectionTop();
+    };
     Element.prototype.setData = function (datas) {
         var k = this.getAttribute('__keyData__');
         var data = memoryDatas[k];
@@ -616,6 +630,62 @@
             }
             return this;
         };
+        // 删除动画元素
+        this.removeTmp = function () {
+            query('.tmpSection', this.obj).remove();
+        };
+        this.stepAction = function (obj, from, callback) {
+            if (in_array(from, ['left', 'right', 'top', 'bottom'])){
+                var dom = obj.cloneNode(true);
+                var style = window.getComputedStyle(obj);
+                dom.style.width = style.width;
+                dom.style.height = style.height;
+                // dom.style['-webkit-margin-before'] = 0;
+                // dom.style['-webkit-margin-after'] = 0;
+                dom.removeAttribute('step');
+            }
+            switch (from){
+                case 'left':
+                    dom.style.left = obj.sectionLeft('section')-window.innerWidth+'px';
+                    dom.style.top = obj.sectionTop('section')+'px';
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    dom.style.left = obj.sectionLeft('section')+'px';
+                    break;
+
+                case 'right':
+                    dom.style.left = obj.sectionLeft('section')+window.innerWidth+'px';
+                    dom.style.top = obj.sectionTop('section')+'px';
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    dom.style.left = obj.sectionLeft('section')+'px';
+                    break;
+
+                case 'top':
+                    dom.style.left = obj.sectionLeft('section')+'px';
+                    dom.style.top = obj.sectionTop('section')-window.innerHeight+'px';
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    dom.style.top = obj.sectionTop('section')+'px';
+                    break;
+
+                case 'bottom':
+                    dom.style.left = obj.sectionLeft('section')+'px';
+                    dom.style.top = obj.sectionTop('section')+window.innerHeight+'px';
+                    obj.parent('section').appendChild(dom);
+                    dom.addClass('tmpSection');
+                    dom.style.top = obj.sectionTop('section')+'px';
+                    break;
+
+                default:
+                    callback(obj);
+                    return;
+            }
+            setTimeout(function () {
+                dom.remove();
+                callback(obj);
+            }, 1000);
+        };
         this.showStep = function (init) {
             typeof init === "undefined" && (init = false);
             var step = this.steps[this.current];
@@ -625,14 +695,16 @@
             } else {
                 steps = step['steps'][step['indexs'][step.current]];
             }
-            for (var i in steps){
-                var obj = steps[i];
-                obj.addClass('active');
-                var action = obj.getAttribute('action');
-                if (action){
-                    action = eval(action);
-                    action.call(obj, true);
-                }
+            for (var i=0,obj; obj = steps[i++];){
+                var from = obj.getAttribute('from');
+                this.stepAction(obj, from, function (obj) {
+                    obj.addClass('active');
+                    var action = obj.getAttribute('action');
+                    if (action){
+                        action = eval(action);
+                        action.call(obj, true);
+                    }
+                });
             }
             return this;
         };
