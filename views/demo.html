@@ -8,33 +8,169 @@
     <meta name="keywords" content="betterPPT,WeJs">
     <meta name="description" content="A html5 ppt demo with WeJs">
 
-    <title>betterPPT示例</title>
+    <title>上半年工作汇报</title>
     <link rel="icon" href="/node/images/favicon.ico" type="image/x-icon" />
 
 </head>
 
 <link href="/node/css/betterPPT.css" rel="stylesheet" type="text/css"/>
-<link href="/node/css/demo.css" rel="stylesheet" type="text/css"/>
+<link href="/node/codemirror/lib/codemirror.css" rel="stylesheet" type="text/css"/>
+<link href="/node/css/ppt.css" rel="stylesheet" type="text/css"/>
 
 <!--<script type="text/javascript" src="/node/js/jquery.js"></script>-->
 <!--<script type="text/javascript" src="/node/js/betterPPT.js"></script>-->
-<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/" preload="betterPPT,demo"></script>
+<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/" preload="betterPPT,ppt"></script>
 
 <div class="betterPPT-unsupported">
     <div style="margin: 200px 10%">您的浏览器不支持该DEMO的展示<br />请使用最新版的 chrome/safari/firefox 预览</div>
 </div>
 <div class="betterPPT">
     <section>
-        <p>一个简单的例子</p>
+        <p class="font-lg" style="margin-top: 25%">上半年工作总结</p>
+        <p class="font-sm" step="1" style="margin-left: 30%; margin-top: 2%">by billge</p>
+    </section>
+    <section from="right" class="qcloud">
+        <p>腾讯云页面接入&&用户打通</p>
+        <img class="float qcloudPng" src="/node/images/qcloud.png" step="1">
+        <ul class="float font-sm">
+            <img src="/node/images/qcloud2.png" style="max-width: 100%" step="2">
+            <li step="3">有损打通，减少逻辑耦合</li>
+            <li step="3">只需开发接入页面，后台接口仍可复用</li>
+            <li step="3">适用于后续工具对接入</li>
+            <li step="3">页面平均开发周期在<br /><span class="colorR">1.5天／页面</span></li>
+            <li step="3"><a href="https://console.qcloud.com/wetest" target="_blank">云真机接入页面展示</a></li>
+        </ul>
+    </section>
+
+    <section from="bottom" class="biny">
+        <p>Web后台框架全面统一升级维护</p>
+        <div class="float" style="width: 32%;margin-right: 5%">
+            <ul style="width: 100%; text-align: left">
+                <li class="font-sm" step="1" url="http://pub.code.oa.com/project/releases?projectName=Biny"
+                    action="pptJs.changeFrame">version 2.2.* => 2.6.2</li>
+                <li class="font-sm" step="2" url="http://wetest.ied.com/kibana/" action="pptJs.changeFrame">支持外接日志系统（包括但不限于kibana）</li>
+                <li class="font-sm" step="3">Lib库分离 => 系统库（lib）<br />+ 用户仓库（vendor）</li>
+                <li class="font-sm" step="4">系统库（lib）支持脚本热更</li>
+                <li class="font-sm" step="5" url="http://www.billge.cc/#config" action="pptJs.changeFrame">配置动态化 /config/config.php</li>
+                <li class="font-sm" step="6" action="pptJs.drawChart">优化底层结构，提升性能<span class="colorR">10%</span>以上</li>
+            </ul>
+            <div id="chart" style="width: 100%; height: 5em; margin-top: 1%"></div>
+        </div>
+        <div class="float" style="width: 63%; margin-top: 2%" step="1">
+            <iframe id="showFrame" style="width: 100%; height: 15em;"></iframe>
+        </div>
+    </section>
+
+    <section from="left" class="fsight">
+        <p style="margin-bottom: 3%">风讯域名变更&&跨域兼容</p>
+        <ul class="float" style="width: 35%;">
+            <li step="1" class="font-sm">背景：</li>
+            <li step="1" class="font-sm">舆情域名升级后所有与平台对请求变为<span class="colorR">跨域请求</span></li>
+            <li step="2" class="font-sm"></li>
+            <li step="2" class="font-sm">解决方案：</li>
+            <li step="2" class="font-sm">使用平台代理IFRAME提供跨域支持</li>
+            <li step="2" class="font-sm">强制升级风讯与iframe的域名都为<span class="colorR">.qq.com</span></li>
+            <li step="4" class="font-sm"></li>
+            <li step="4" class="font-sm">好处：</li>
+            <li step="4" class="font-sm">风讯代码几乎<span class="colorR">零成本</span>修改</li>
+            <li step="4" class="font-sm">只需在header中嵌入代理iframe即可</li>
+        </ul>
+        <div class="float" style="max-width: 58%; width: 58%">
+            <img step="1" src="/node/images/fsight1.png" style="width: 100%">
+            <div step="3" action="pptJs.fsightImg"></div>
+        </div>
+    </section>
+
+    <section from="top" class="platform">
+        <p>平台优化汇总</p>
+        <img data-width="10em" src="/node/images/platform/corp.png" style="top:10em;left:6em;transform: rotateZ(10deg)">
+        <img data-width="10em" src="/node/images/platform/login.png" style="top:5em;left:4em;transform: rotateZ(-20deg)">
+        <img data-width="6em" src="/node/images/platform/login_phone.png" style="top:5em;left:20em;transform: rotateZ(30deg)">
+        <img data-width="12em" src="/node/images/platform/pay.png" style="top:7em;left:14em;transform: rotateZ(-20deg)">
+        <img data-width="7em" src="/node/images/platform/personal.png" style="top:4em;left:12em;transform: rotateZ(30deg)">
+        <img data-width="8em" src="/node/images/platform/solution.png" style="top:4em;left:4em;transform: rotateZ(-20deg)">
+        <img data-width="16em" src="/node/images/platform/price.png" style="top:6em;left:7em;transform: rotateZ(5deg)">
+        <div step="1" action="pptJs.showPlat"></div>
+    </section>
+
+    <section from="right" class="WeJs">
+        <p>前端模块化</p>
+        <ul class="float font-sm" style="width: 35%">
+            <li step="1">一切皆是模块</li>
+            <li step="2"></li>
+            <li step="2">代码格式统一规范</li>
+            <li step="2">代码可读性强</li>
+            <li step="3"></li>
+            <li step="3">用即加载</li>
+            <li step="3">缓存处理，避免重复加载</li>
+            <li step="4"></li>
+            <li step="4">下半年在平台试运行</li>
+        </ul>
+        <div class="float" style="width: 58%" step="1">
+            <img class="float" style="width: 100%" src="/node/images/WeJs.png">
+        </div>
+
+        <div class="float" step="3">
+            <textarea class="font-sm" id="WeJsArea" rows="4" cols="10">var toast = require('toast');
+toast.show('这是一个提示框')</textarea>
+            <button onclick="pptJs.runCode(this)" style="width: 5em; vertical-align: 3em; margin-left: 2em">RUN</button>
+        </div>
+        <div style="display: none" step="0" action="pptJs.loadCode"></div>
+    </section>
+
+    <section from="bottom" class="pack">
+        <p style="margin-bottom: 2%">前端工程化</p>
+        <ul class="float font-sm" style="width: 35%">
+            <li step="1">模块化是工程化的基础</li>
+            <li step="2"></li>
+            <li step="2">增量发布</li>
+            <li step="2">hash处理静态资源</li>
+            <li step="2">避免CDN全量压缩</li>
+            <li step="4"></li>
+            <li step="4">下半年完成模块化打包工具</li>
+            <li step="4"> js/css模块化打包发布</li>
+            <li step="4">避免CDN全量发布</li>
+            <li step="4">在平台试运行</li>
+        </ul>
+        <div class="float font-sm" style="width: 60%;">
+            <div class="float" style="width:40%;" step="2">
+                优化前 <br />
+                <img src="/node/images/before.png" style="height: 20em">
+            </div>
+            <div class="float" style="width:20%;" step="3">
+                <img src="/node/images/to.png" style="margin-top: 10em; width: 100%">
+            </div>
+            <div class="float" style="width:40%;" step="3">
+                优化后 <br />
+                <img src="/node/images/after.png" style="height: 20em">
+            </div>
+        </div>
+    </section>
+
+    <section from="top" class="leverage">
+        <p style="margin-bottom: 2em">上半年个人影响力汇总</p>
+        <div step="1">腾讯学院初级教师《web前端安全防范》</div>
+        <div step="2">KM头条<a href="http://km.oa.com/group/24949/articles/show/298431" target="_blank">
+            《如何使用机器学习快速形成金字塔分布》</a></div>
+        <div step="3">个人专利：</div>
+        <div step="3"><a href="http://patent.oa.com/Flow/StepHandle?caseId=138432" target="_blank">一种基于PHP页面渲染层的自动反XSS注入机制</a></div>
+        <div step="3"><a href="http://patent.oa.com/Flow/StepHandle?caseId=138437" target="_blank">一种基于PHP的ORM数据传递方式</a></div>
+        <div step="3"><a href="http://patent.oa.com/Flow/StepHandle?caseId=138753" target="_blank">一种PHP代码在web控制台中输出调试的方法</a></div>
+    </section>
+
+    <section from="zoomin">
+        <p class="font-lg" style="margin-top: 25%">THANKS～</p>
     </section>
 </div>
 
 <script type="text/javascript">
-    var PPT;
-    WeJs.ready(function (betterPPT, demo) {
+    var PPT,pptJs;
+    WeJs.ready(function (betterPPT, ppt) {
+        pptJs = ppt;
         PPT = new betterPPT('.betterPPT');
-        PPT.init();
+        PPT.config({click:false}).init();
     });
     //    var PPT = new betterPPT('.betterPPT');
     //    PPT.init();
 </script>
+

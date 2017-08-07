@@ -393,17 +393,15 @@
             this.show('first');
             this.bindCheck();
             bindResize(this);
-            if (this.showImg){
-                query('section img[src]').on('click', function () {
-                    if (!self.oView){
-                        var images = [], index= query('img', this.parent('section'), 'visible').indexOf(this);
-                        query('img', this.parent('section'), 'visible').forEach(function (img) {
-                            images.push(img.getAttribute('src'));
-                        });
-                        showImages({url:images,index:index});
-                    }
-                });
-            }
+            query('section img[src]').on('click', function () {
+                if (self.showImg && !self.oView){
+                    var images = [], index= query('img', this.parent('section'), 'visible').indexOf(this);
+                    query('img', this.parent('section'), 'visible').forEach(function (img) {
+                        images.push(img.getAttribute('src'));
+                    });
+                    showImages({url:images,index:index});
+                }
+            });
             return this;
         };
         this.reload = function(n){
@@ -748,11 +746,9 @@
         };
         this.bindCheck = function(){
             var self = this;
-            if (this.click){
-                document.body.on('click', function () {
-                    self.step();
-                });
-            }
+            document.body.on('click', function () {
+                self.click && self.step();
+            });
             // 键盘事件绑定
             document.body.on('keydown', function (event) {
                 if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT'){
