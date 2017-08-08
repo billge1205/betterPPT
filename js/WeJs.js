@@ -161,9 +161,9 @@
         var WeJs = {
             version : '0.9.4',
             jsRoot: '',domains: [],runList: [],modules: {},exports: {},events: {},
-            lists: [],files: {},hashs: {},alert: true, preloads:[],
+            lists: [],alias: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
-                this.files = configs.files;
+                this.alias = configs.alias;
                 var domains = configs.path;
                 this.domains = isArr(domains) ? domains : [domains];
                 this.jsRoot = isArr(domains) ? domains[0] : domains;
@@ -185,7 +185,7 @@
                 return false;
             },
             getPath: function(src){
-                var path = this.files[src];
+                var path = this.alias[src];
                 if (!path || isNone(path[0])){
                     path = this.jsRoot + src;
                     if (!isNone(this.hashs[src])){
@@ -429,10 +429,10 @@
     // 预初始化
     var current = document.scripts[document.scripts.length - 1];
     var path = getValue(current.getAttribute('path'), '/');
-    var files = getValue(current.getAttribute('files'), {});
+    var alias = getValue(current.getAttribute('alias'), {});
     var hashs = getValue(current.getAttribute('hashs'), {});
     var preload = getValue(current.getAttribute('preload'));
-    root.WeJs.init({path:path, files: files, hashs: hashs});
+    root.WeJs.init({path:path, alias: alias, hashs: hashs});
     if (preload){
         preload = preload.split(',');
         root.requires(preload, function () {

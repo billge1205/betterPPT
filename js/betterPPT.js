@@ -680,8 +680,8 @@
                     dom.style.top = top + parseInt(dom.style.height)/2 + 'px';
                     dom.style.width = 0;
                     dom.style.height = 0;
-                    obj.parent('section').appendChild(dom);
                     dom.addClass('tmpSection');
+                    obj.parent('section').appendChild(dom);
                     setTimeout(function () {
                         dom.style.width = style.width;
                         dom.style.height = style.height;
@@ -695,8 +695,8 @@
                     return;
             }
             if (in_array(from, ['left', 'right', 'top', 'bottom'])){
-                obj.parent('section').appendChild(dom);
                 dom.addClass('tmpSection');
+                obj.parent('section').appendChild(dom);
                 setTimeout(function () {
                     dom.style.left = left+'px';
                     dom.style.top = top+'px';
