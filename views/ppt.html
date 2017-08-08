@@ -8,41 +8,44 @@
     <meta name="keywords" content="betterPPT,WeJs">
     <meta name="description" content="A html5 ppt demo with WeJs">
 
-    <title>PPT DEMO</title>
+    <title>betterPPT示例</title>
     <link rel="icon" href="/node/images/favicon.ico" type="image/x-icon" />
 
 </head>
 
 <link href="/node/css/betterPPT.css" rel="stylesheet" type="text/css"/>
-<link href="/node/css/ppt.css" rel="stylesheet" type="text/css"/>
+<link href="/node/css/demo.css" rel="stylesheet" type="text/css"/>
 
 <!--<script type="text/javascript" src="/node/js/jquery.js"></script>-->
 <!--<script type="text/javascript" src="/node/js/betterPPT.js"></script>-->
-<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/" preload="betterPPT"></script>
+<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/" preload="betterPPT,demo"></script>
 
 <div class="betterPPT-unsupported">
     <div style="margin: 200px 10%">您的浏览器不支持该DEMO的展示<br />请使用最新版的 chrome/safari/firefox 预览</div>
 </div>
 <div class="betterPPT">
     <section>
-        <p style="font-size: 1em; line-height: 1em; transform: translateZ(100px)" step="0">中字体</p>
-        <p style="font-size: 2em; line-height: 2em; transform: translateZ(50px)" step="5" >大字体</p>
-        <p style="font-size: 0.5em; line-height: 0.5em; transform: translateZ(80px)" step="2" from="left">小字体</p>
+        <p>一个简单的例子</p>
     </section>
-    <section from="left">这是一个测试2</section>
-    <section from="right">这是一个测试3</section>
-    <section from="top">这是一个测试4</section>
-    <section from="zoomout">这是一个测试4.5</section>
-    <section from="bottom">这是一个测试5</section>
-    <section from="zoomin">这是一个测试6</section>
+
+    <section from="left" id="theme-section">
+        <p>试着改变模版看看</p>
+        <img src="/node/theme/bamboo.jpg" theme="bamboo" onclick="demoJs.clickImg(this)">
+        <img src="/node/theme/blue.jpg" theme="blue" onclick="demoJs.clickImg(this)">
+        <img src="/node/theme/earth.jpg" theme="earth" onclick="demoJs.clickImg(this)">
+        <img src="/node/theme/light.jpg" theme="light" onclick="demoJs.clickImg(this)">
+        <img src="/node/theme/note.jpg" theme="note" onclick="demoJs.clickImg(this)">
+        <img src="/node/theme/orange.jpg" theme="orange" onclick="demoJs.clickImg(this)">
+    </section>
 </div>
 
 <script type="text/javascript">
-    var PPT;
-    WeJs.ready(function (betterPPT) {
-        PPT = betterPPT('.betterPPT');
-        PPT.init({anchor:false});
+    var PPT, demoJs;
+    WeJs.ready(function (betterPPT, demo) {
+        demoJs = demo;
+        PPT = new betterPPT('.betterPPT');
+        PPT.config({showImg: false}).init();
     });
-//    var PPT = betterPPT('.betterPPT');
-//    PPT.init();
+    //    var PPT = new betterPPT('.betterPPT');
+    //    PPT.init();
 </script>

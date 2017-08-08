@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WeJs</title>
+</head>
+<body>
+start console
+</body>
+
+<script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/"></script>
+
+<script type="text/javascript">
+    requires(['test', 'test2'], function (a,b) {
+        console.log(a.done, b.done);
+    });
+</script>
+</html>
