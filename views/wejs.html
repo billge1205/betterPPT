@@ -11,8 +11,15 @@ start console
 <script type="text/javascript" src="/node/js/WeJs.js" path="/node/js/"></script>
 
 <script type="text/javascript">
-    requires(['test', 'test2'], function (a,b) {
-        console.log(a.done, b.done);
-    });
+//    var test = require('test');
+//    var test2 = require('test2');
+//    document.body.innerHTML += '<br />test.done:'+test.done+' test2.done:'+test2.done;
+    var Person = require('../../parent');
+    var p = new Person('p', 12);
+    console.log(p.getInfo());
+
+    var Child = require('child');
+    var c = new Child('c', 5);
+    console.log(c.getInfo());
 </script>
 </html>

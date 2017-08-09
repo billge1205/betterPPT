@@ -83,6 +83,15 @@
         return obj;
     }
 
+    function inherit(superCtor) {
+        if (!isFn(superCtor)){
+            return clone(superCtor);
+        }
+        var ctor = function(){superCtor.apply(this, arguments)};
+        ctor.prototype = new superCtor();
+        return ctor;
+    }
+
     function getLocal(src) {
         return isPrivateMode ? null : (localStorage[src] ? JSON.parse(localStorage[src]) : null);
     }
@@ -159,14 +168,12 @@
 
     if (isNone(root.WeJs)){
         var WeJs = {
-            version : '0.9.4',
-            jsRoot: '',domains: [],runList: [],modules: {},exports: {},events: {},
+            version : '0.9.5',
+            jsRoot: '',runList: [],modules: {},exports: {},events: {},
             lists: [],alias: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
                 this.alias = configs.alias;
-                var domains = configs.path;
-                this.domains = isArr(domains) ? domains : [domains];
-                this.jsRoot = isArr(domains) ? domains[0] : domains;
+                this.jsRoot = configs.path;
                 this.hashs = configs.hashs ? configs.hashs : {};
             },
             ready: function(callback){
@@ -177,17 +184,36 @@
                 }
             },
             checkDomain: function(url){
-                for (var i=0, domain; domain=this.domains[i++];){
-                    if (url.indexOf(domain) === 0){
-                        return true;
-                    }
+                if (url.substring(0, 2) === '//' || url.substring(0, 4) === 'http'){
+                    var preg = new RegExp('^(http[s]?:)?\/\/'+window.location.host.replace(/\./g, '\\.')+'/');
+                    return preg.test(url);
+                } else {
+                    return true;
                 }
-                return false;
+            },
+            analyse: function (src) {
+                if (src.substring(0, 2) === '..'){
+                    var arr = src.split('/');
+                    var root = this.jsRoot.replace(/(^\/*)|(\/*$)/g, "").split('/');
+                    var tmp = [], path, tpath;
+                    while (path = arr.pop()){
+                        if (path === '..' && (tpath = root.pop())){
+                            tmp.unshift(tpath);
+                        } else if (path !== '..'){
+                            tmp.unshift(path);
+                        }
+                    }
+                    src = '/'+tmp.join('/');
+                }
+                if (src.substring(0, this.jsRoot.length) === this.jsRoot){
+                    src = src.substring(this.jsRoot.length);
+                }
+                return src;
             },
             getPath: function(src){
                 var path = this.alias[src];
                 if (!path || isNone(path[0])){
-                    path = this.jsRoot + src;
+                    path = src.substring(0, 1) !== '/' ? this.jsRoot + src : src;
                     if (!isNone(this.hashs[src])){
                         path += ('.'+this.hashs[src]);
                     }
@@ -305,16 +331,28 @@
                 }
             },
             define: function (callback) {
+                var module = arguments.length > 1 ? arguments[1] : null;
                 var script = getCurrentScript();
                 if (!script){throw new Error('no script loading')}
                 var src = script.getAttribute('data-src');
                 if (!src){throw new Error('script src error')}
-                callback.call(this, WeJs.exports[src]);
+                callback.call(module ? inherit(module) : this, WeJs.exports[src]);
             },
             imports: function(name){
                 return new importObj(name);
             },
+            extend : function(src){
+                var module = this.require(src);
+                var self = this;
+                var extendObj = function () {
+                    this.define = function (callback) {
+                        self.define(callback, module);
+                    };
+                };
+                return new extendObj();
+            },
             require: function(src){
+                src = this.analyse(src);
                 var module = this.modules[src];
                 var path = this.getPath(src);
                 if (!path){
@@ -347,22 +385,12 @@
                 }
                 return this.getExport(src);
             },
-            extend : function(superCtor, ctor){
-                if (!isFn(superCtor)){
-                    return clone(superCtor);
-                }
-                if (!isFn(ctor)){
-                    ctor = function(){superCtor.apply(this, arguments)};
-                }
-                ctor.prototype = new superCtor();
-                return ctor;
-            },
             requires: function (lists, callback) {
                 callback = isFn(callback) ? callback : function(){};
                 lists = isArr(lists) ? lists : [lists];
                 var self = this;
                 var waited = [];
-                for (var i=0,src; src = lists[i++];){
+                for (var i=0,src; src = this.analyse(lists[i++]);){
                     var module = this.modules[src];
                     var path = this.getPath(src);
                     if (!path){
@@ -423,6 +451,9 @@
         };
         root.define = function(){
             return WeJs.define.apply(WeJs, arguments);
+        };
+        root.extend = function(){
+            return WeJs.extend.apply(WeJs, arguments);
         };
     }
 
