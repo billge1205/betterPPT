@@ -169,11 +169,15 @@
     if (isNone(root.WeJs)){
         var WeJs = {
             version : '0.9.5',
-            jsRoot: '',runList: [],modules: {},exports: {},events: {},
+            jsHost: '', jsRoot: '',runList: [],modules: {},exports: {},events: {},
             lists: [],alias: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
                 this.alias = configs.alias;
-                this.jsRoot = configs.path;
+                // 分析url
+                var a = document.createElement('a');
+                a.href = configs.path;
+                this.jsHost = a.hostname;
+                this.jsRoot = a.pathname;
                 this.hashs = configs.hashs ? configs.hashs : {};
             },
             ready: function(callback){
@@ -184,40 +188,30 @@
                 }
             },
             checkDomain: function(url){
-                if (url.substring(0, 2) === '//' || url.substring(0, 4) === 'http'){
-                    var preg = new RegExp('^(http[s]?:)?\/\/'+window.location.host.replace(/\./g, '\\.')+'/');
-                    return preg.test(url);
-                } else {
-                    return true;
-                }
+                var a = document.createElement('a');
+                a.href = url;
+                return a.hostname === window.location.host || a.hostname === this.jsHost;
             },
             analyse: function (src) {
-                if (src.substring(0, 2) === '..'){
-                    var arr = src.split('/');
-                    var root = this.jsRoot.replace(/(^\/*)|(\/*$)/g, "").split('/');
-                    var tmp = [], path, tpath;
-                    while (path = arr.pop()){
-                        if (path === '..' && (tpath = root.pop())){
-                            tmp.unshift(tpath);
-                        } else if (path !== '..'){
-                            tmp.unshift(path);
-                        }
-                    }
-                    src = '/'+tmp.join('/');
+                if (/^(http[s]?:)?\/\//.test(src)){
+                    return src;
+                } else if (src.substring(0, 1) === '/') {
+                    src = '//' + this.jsHost + src;
+                } else {
+                    src = '//' + this.jsHost + this.jsRoot + src;
                 }
-                if (src.substring(0, this.jsRoot.length) === this.jsRoot){
-                    src = src.substring(this.jsRoot.length);
-                }
-                return src;
+                var a = document.createElement('a');
+                a.href = src;
+                return '//'+a.hostname+a.pathname
             },
-            getPath: function(src){
-                var path = this.alias[src];
-                if (!path || isNone(path[0])){
-                    path = src.substring(0, 1) !== '/' ? this.jsRoot + src : src;
-                    if (!isNone(this.hashs[src])){
-                        path += ('.'+this.hashs[src]);
-                    }
-                    path += '.js';
+            getPath: function(src, hash){
+                if (!isNone(hash)){
+                    src += ('.'+hash);
+                }
+                if (/\.js(\?|#)?/.test(src)){
+                    path = src;
+                } else {
+                    path = src + '.js';
                 }
                 if (isArr(path)){
                     this.exports[src] = this.setExport(src, path[1]);
@@ -229,12 +223,11 @@
             getJs: function(url){
                 if (!this.checkDomain(url)){
                     console.warn('跨域请求请使用requires方法:'+url);
-                    return false;
                 }
                 var xmlHttp = new XMLHttpRequest();
                 try {
                     xmlHttp.open("GET",url,false);
-                    if (getLocal(url)){
+                    if (getLocal(url) && getLocal(url).Last && getLocal(url).ETag){
                         xmlHttp.setRequestHeader('If-Modified-Since', getLocal(url).Last);
                         xmlHttp.setRequestHeader('If-None-Match', getLocal(url).ETag);
                         xmlHttp.setRequestHeader('Accept', "*/*");
@@ -352,9 +345,11 @@
                 return new extendObj();
             },
             require: function(src){
+                src = isNone(this.alias[src]) ? src : this.alias[src];
+                var hash = isNone(this.hashs[src]) ? undefined : this.hashs[src];
                 src = this.analyse(src);
                 var module = this.modules[src];
-                var path = this.getPath(src);
+                var path = this.getPath(src, hash);
                 if (!path){
                     return;
                 }
@@ -390,9 +385,14 @@
                 lists = isArr(lists) ? lists : [lists];
                 var self = this;
                 var waited = [];
-                for (var i=0,src; src = this.analyse(lists[i++]);){
+                var newList = [];
+                for (var i=0,src; src = lists[i++];){
+                    src = isNone(this.alias[src]) ? src : this.alias[src];
+                    var hash = isNone(this.hashs[src]) ? undefined : this.hashs[src];
+                    src = this.analyse(src);
+                    newList.push(src);
                     var module = this.modules[src];
-                    var path = this.getPath(src);
+                    var path = this.getPath(src, hash);
                     if (!path){
                         return;
                     }
@@ -427,6 +427,7 @@
                         waited.push(src);
                     }
                 }
+                lists = newList;
                 if (waited.length > 0){
                     this.lists.push({lists:lists, waited:waited, callback:callback});
                 } else {
@@ -459,10 +460,10 @@
 
     // 预初始化
     var current = document.scripts[document.scripts.length - 1];
-    var path = getValue(current.getAttribute('path'), '/');
-    var alias = getValue(current.getAttribute('alias'), {});
-    var hashs = getValue(current.getAttribute('hashs'), {});
-    var preload = getValue(current.getAttribute('preload'));
+    var path = getValue(current.getAttribute('data-path'), '/');
+    var alias = getValue(current.getAttribute('data-alias'), {});
+    var hashs = getValue(current.getAttribute('data-hashs'), {});
+    var preload = getValue(current.getAttribute('data-preload'));
     root.WeJs.init({path:path, alias: alias, hashs: hashs});
     if (preload){
         preload = preload.split(',');
