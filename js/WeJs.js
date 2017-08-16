@@ -168,7 +168,7 @@
 
     if (isNone(root.WeJs)){
         var WeJs = {
-            version : '0.9.5',
+            version : '0.9.6',
             jsHost: '', jsRoot: '',runList: [],modules: {},exports: {},events: {},
             lists: [],alias: {},hashs: {},alert: true, preloads:[],
             init: function(configs){
