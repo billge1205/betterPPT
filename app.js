@@ -23,6 +23,11 @@ http.createServer(function (req, res) {
             res.write(fs.readFileSync('views/demo.html', 'utf-8').toString());
             res.end();
             break;
+        case '/node/promotion':
+            res.writeHead(200, { 'Content-Type': 'text/html'});
+            res.write(fs.readFileSync('views/promotion.html', 'utf-8').toString());
+            res.end();
+            break;
         default:
             res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('Page Not Found\n');
             break;
