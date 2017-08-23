@@ -193,8 +193,14 @@
                 return a.hostname === window.location.host || a.hostname === this.jsHost;
             },
             analyse: function (src) {
+                var exp = null;
+                // 参数返回
+                if (isArr(src)){
+                    exp = src[1];
+                    src = src[0];
+                }
                 if (/^(http[s]?:)?\/\//.test(src)){
-                    return src;
+
                 } else if (src.substring(0, 1) === '/') {
                     src = '//' + this.jsHost + src;
                 } else {
@@ -202,7 +208,11 @@
                 }
                 var a = document.createElement('a');
                 a.href = src;
-                return '//'+a.hostname+a.pathname
+                src = '//'+a.hostname+a.pathname;
+                if (exp){
+                    this.exports[src] = this.setExport(src, exp);
+                }
+                return src;
             },
             getPath: function(src, hash){
                 if (!isNone(hash)){
@@ -213,12 +223,7 @@
                 } else {
                     path = src + '.js';
                 }
-                if (isArr(path)){
-                    this.exports[src] = this.setExport(src, path[1]);
-                    return path[0];
-                } else {
-                    return path;
-                }
+                return path;
             },
             getJs: function(url){
                 if (!this.checkDomain(url)){
@@ -463,12 +468,14 @@
     var path = getValue(current.getAttribute('data-path'), '/');
     var alias = getValue(current.getAttribute('data-alias'), {});
     var hashs = getValue(current.getAttribute('data-hashs'), {});
+    var main = getValue(current.getAttribute('data-main'));
     var preload = getValue(current.getAttribute('data-preload'));
     root.WeJs.init({path:path, alias: alias, hashs: hashs});
     if (preload){
-        preload = preload.split(',');
+        preload = isArr(preload) ? preload : preload.split(',');
         root.requires(preload, function () {
             root.WeJs.preloads = arguments;
+            main && root.requires(main);
         });
     }
 })(this, document);
