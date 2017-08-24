@@ -639,19 +639,8 @@
             if (in_array(from, ['left', 'right', 'top', 'bottom', 'opacity', 'zoom'])){
                 var dom = obj.cloneNode(true);
                 var style = window.getComputedStyle(obj);
-                // var copy = ['width', 'height', 'textAlign'];
-                // for (var s in style){
-                //     if (in_array(s, copy) !== -1){
-                //         dom.style[s] = style[s];
-                //     }
-                //     // if (isNaN(s) && in_array(s, noCopy) === -1 && !isFn(style[s]) && s.substr(0,1) !== '-') {
-                //     //
-                //     // }
-                // }
-                // dom.style.position = 'absolute';
-                // dom.style.transform = 'all 1s ease-in-out 0ms';
-                // dom.style.zIndex = 9999999;
-                dom.style.margin = 0;
+                dom.style.width = style.width;
+                dom.style.height = style.height;
 
                 dom.removeAttribute('step');
                 left = obj.sectionLeft('section');
