@@ -716,14 +716,17 @@
             } else {
                 steps = step['steps'][step['indexs'][step.current]];
             }
+            var current = step.current;
             for (var i=0,obj; obj = steps[i++];){
                 var from = obj.getAttribute('from');
                 this.stepAction(obj, from, function (obj) {
-                    obj.addClass('active');
-                    var action = obj.getAttribute('action');
-                    if (action){
-                        action = eval(action);
-                        action.call(obj, true);
+                    if (step.current >= current){
+                        obj.addClass('active');
+                        var action = obj.getAttribute('action');
+                        if (action){
+                            action = eval(action);
+                            action.call(obj, true);
+                        }
                     }
                 });
             }
