@@ -349,16 +349,11 @@
         this.y = 0;
         this.config = function (config) {
             config = config || {};
-            var n = config.current || this.gethash();
+            typeof config.current === 'undefined' || (this.current = config.current);
             typeof config.circle === 'undefined' || (this.circle = config.circle);
             typeof config.click === 'undefined' || (this.click = config.click);
             typeof config.anchor === 'undefined' || (this.anchor = config.anchor);
             typeof config.showImg === 'undefined' || (this.showImg = config.showImg);
-            if (n > this.sections.length){
-                this.current = 0;
-            } else {
-                this.current = n;
-            }
             return this;
         };
         this.init = function(){
@@ -372,6 +367,11 @@
                 this.obj.remove();
                 return;
             }
+            this.current = this.anchor ? this.gethash() : this.current;
+            if (this.current > this.sections.length){
+                this.current = this.sections.length - 1;
+            }
+
             var self = this;
             this.sections.forEach(function (section, i) {
                 var steps = {indexs:[0], steps:{}, init: [], current:0} ;
@@ -639,10 +639,20 @@
             if (in_array(from, ['left', 'right', 'top', 'bottom', 'opacity', 'zoom'])){
                 var dom = obj.cloneNode(true);
                 var style = window.getComputedStyle(obj);
-                dom.style.width = style.width;
-                dom.style.height = style.height;
-                // dom.style['-webkit-margin-before'] = 0;
-                // dom.style['-webkit-margin-after'] = 0;
+                // var copy = ['width', 'height', 'textAlign'];
+                // for (var s in style){
+                //     if (in_array(s, copy) !== -1){
+                //         dom.style[s] = style[s];
+                //     }
+                //     // if (isNaN(s) && in_array(s, noCopy) === -1 && !isFn(style[s]) && s.substr(0,1) !== '-') {
+                //     //
+                //     // }
+                // }
+                // dom.style.position = 'absolute';
+                // dom.style.transform = 'all 1s ease-in-out 0ms';
+                // dom.style.zIndex = 9999999;
+                dom.style.margin = 0;
+
                 dom.removeAttribute('step');
                 left = obj.sectionLeft('section');
                 dom.style.left = left + 'px';
@@ -696,7 +706,7 @@
             }
             if (in_array(from, ['left', 'right', 'top', 'bottom'])){
                 dom.addClass('tmpSection');
-                obj.parent('section').appendChild(dom);
+                obj.parentNode.appendChild(dom);
                 setTimeout(function () {
                     dom.style.left = left+'px';
                     dom.style.top = top+'px';
@@ -732,7 +742,12 @@
         };
         this.hideStep = function () {
             var step = this.steps[this.current];
-            var steps = step.steps[step.indexs[step.current]];
+            var steps;
+            if (step.current === 0){
+                steps = step.init;
+            } else {
+                steps = step.steps[step.indexs[step.current]];
+            }
             for (var i in steps){
                 var obj = steps[i];
                 obj.removeClass('active');
