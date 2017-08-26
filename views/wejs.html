@@ -8,22 +8,28 @@
 start console
 </body>
 <script type="text/javascript">var jquery = {jquery: ["http://cdn.wetest.qq.com/platform/2.4.12/js/jquery.min.js?afEDsd", '$']}</script>
-<script type="text/javascript" src="/node/js/WeJs.js" data-path="//www.billge.cc/node/js/" data-alias="$jquery"></script>
+<script type="text/javascript" src="/node/js/WeJs.js" data-path="//www.billge.cc/node/js/" data-alias="$jquery" data-main="index"></script>
 
 <script type="text/javascript">
+
+    WeJs.ready(function () {
+        var j = require('jquery');
+        console.log(j.trim("    dd     "));
+    });
 //    var test = require('test');
 //    var test2 = require('test2');
 //    document.body.innerHTML += '<br />test.done:'+test.done+' test2.done:'+test2.done;
-    var Person = require('parent');
-    var p = new Person('p', 12);
-    document.body.innerHTML += '<br>'+JSON.stringify(p.getInfo());
-
-    var Child = require('child');
-    var c = new Child('c', 6);
-    document.body.innerHTML += '<br>'+JSON.stringify(c.getInfo());
-
-    var j = require('jquery');
-    console.log(j.trim("    dd     "));
+//
+//    var Person = require('parent');
+//    var p = new Person('p', 12);
+//    document.body.innerHTML += '<br>'+JSON.stringify(p.getInfo());
+//
+//    var Child = require('child');
+//    var c = new Child('c', 6);
+//    document.body.innerHTML += '<br>'+JSON.stringify(c.getInfo());
+//
+//    var j = require('jquery');
+//    console.log(j.trim("    dd     "));
 
 </script>
 </html>

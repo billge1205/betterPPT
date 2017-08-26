@@ -3,16 +3,6 @@
  */
 ;(function (root, d) {
     "use strict";
-    //兼容无痕模式
-    var isPrivateMode;
-    try {
-        localStorage.setItem('isPrivateMode', '1');
-        localStorage.removeItem('isPrivateMode');
-        isPrivateMode = false;
-    } catch(e) {
-        isPrivateMode = true;
-    }
-
     function in_array(needle, haystack) {
         if(typeof needle === 'string' || typeof needle === 'number') {
             for(var i in haystack) {
@@ -22,11 +12,6 @@
             }
         }
         return -1;
-    }
-
-    function array_delete(needle, haystack){
-        haystack.splice(in_array(needle, haystack), 1);
-        return haystack;
     }
 
     function isNone(o){
@@ -52,10 +37,6 @@
     function type(obj) {
         var o = {};
         return o.toString.call(obj).replace(/\[object (\w+)\]/, '$1').toLowerCase();
-    }
-
-    function isIE(){
-        return (window.ActiveXObject || "ActiveXObject" in window);
     }
 
     function clone(obj){
@@ -92,10 +73,6 @@
         return ctor;
     }
 
-    function getLocal(src) {
-        return isPrivateMode ? null : (localStorage[src] ? JSON.parse(localStorage[src]) : null);
-    }
-
     function getValue(value, defaults) {
         defaults = isNone(defaults) ? value : defaults;
         if (!value || !isString(value)){
@@ -129,22 +106,22 @@
     };
 
     var ExportObj = function(src, ret){
-        var self = this;
+        // var self = this;
         this.name = src;
         this.exports = {};
-        this.defines = 0;
+        // this.defines = 0;
         ret && (this.__tmp = ret);
-        this.requires = function(lists, callback){
-            self.defines++;
-            WeJs.requires(lists, function(){
-                callback.apply(this, arguments);
-                self.defines--;
-                if (self.defines === 0){
-                    WeJs.modules[self.name].loaded = true;
-                    WeJs.run(self.name);
-                }
-            });
-        };
+        // this.requires = function(lists, callback){
+        //     self.defines++;
+        //     WeJs.requires(lists, function(){
+        //         callback.apply(this, arguments);
+        //         self.defines--;
+        //         if (self.defines === 0){
+        //             WeJs.modules[self.name].loaded = true;
+        //             WeJs.run(self.name);
+        //         }
+        //     });
+        // };
     };
 
     var currentScript;
@@ -166,11 +143,13 @@
         return currentScript;
     };
 
+    var status = {loading: 0, loaded: 4, defined: 7, executing: 8,executed: 9, error: 99};
+
     if (isNone(root.WeJs)){
         var WeJs = {
-            version : '0.9.7',
-            jsHost: '', jsRoot: '',runList: [],modules: {},exports: {},events: {},
-            lists: [],alias: {},hashs: {},alert: true, preloads:[],
+            version : '0.10.1',
+            jsHost: '', jsRoot: '', modules: {},exports: {},events: {},
+            alias: {}, hashs: {},
             init: function(configs){
                 this.alias = configs.alias;
                 // 分析url
@@ -178,45 +157,40 @@
                 a.href = configs.path;
                 this.jsHost = a.hostname;
                 this.jsRoot = a.pathname;
-                this.hashs = configs.hashs ? configs.hashs : {};
+                // a.parentNode.removeChild(a);
+                for (var uri in configs.hashs){
+                    isString(uri) && (this.hashs[this.analyse(uri)] = configs.hashs[uri]);
+                }
+                return this;
             },
             ready: function(callback){
-                if (this.lists.length === 0){
-                    callback.apply(this, this.preloads);
-                } else {
-                    this.bind('onload', callback);
-                }
-            },
-            checkDomain: function(url){
-                var a = document.createElement('a');
-                a.href = url;
-                return a.hostname === window.location.host || a.hostname === this.jsHost;
+                this.bind('onload', callback);
+                this.preload(callback);
+                this.run();
             },
             analyse: function (src) {
                 var exp = null;
+                if (!isNone(this.alias[src])){
+                    src = this.alias[src];
+                }
                 // 参数返回
                 if (isArr(src)){
                     exp = src[1];
                     src = src[0];
                 }
-                if (/^(http[s]?:)?\/\//.test(src)){
-
-                } else if (src.substring(0, 1) === '/') {
-                    src = '//' + this.jsHost + src;
-                } else {
+                if (!/^(http[s]?:)?\/\//.test(src) && src.substring(0, 2) !== './' && src.substring(0, 1) !== '/'){
                     src = '//' + this.jsHost + this.jsRoot + src;
                 }
                 var a = document.createElement('a');
                 a.href = src;
-                src = '//'+a.hostname+a.pathname;
-                if (exp){
-                    this.exports[src] = this.setExport(src, exp);
-                }
+                src = a.href;
+                // a.parentNode.removeChild(a);
+                isNone(this.exports[src]) && (this.exports[src] = this.setExport(src, exp));
                 return src;
             },
-            getPath: function(src, hash){
-                if (!isNone(hash)){
-                    src += ('.'+hash);
+            getPath: function(src){
+                if (!isNone(this.hashs[src])){
+                    src += ('.'+this.hashs[src]);
                 }
                 if (/\.js(\?|#)?/.test(src)){
                     path = src;
@@ -225,41 +199,41 @@
                 }
                 return path;
             },
-            getJs: function(url){
-                if (!this.checkDomain(url)){
-                    console.warn('跨域请求请使用requires方法:'+url);
-                }
-                var xmlHttp = new XMLHttpRequest();
-                try {
-                    xmlHttp.open("GET",url,false);
-                    if (getLocal(url) && getLocal(url).Last && getLocal(url).ETag){
-                        xmlHttp.setRequestHeader('If-Modified-Since', getLocal(url).Last);
-                        xmlHttp.setRequestHeader('If-None-Match', getLocal(url).ETag);
-                        xmlHttp.setRequestHeader('Accept', "*/*");
-                    }
-                    xmlHttp.send();
-                } catch (e){
-                    if (this.alert && isIE()){
-                        this.alert = false;
-                        alert('请IE用户设置 工具—>internet选项—>安全—>自定义级别—>其他 栏里面—>启用 跨域访问数据源—>启用，否者无法正常使用页面，请谅解');
-                    }
-                    throw new Error(e);
-                }
-                if (xmlHttp.status === 200){
-                    if (!isPrivateMode){
-                        localStorage[url] = JSON.stringify({
-                            ETag: xmlHttp.getResponseHeader('ETag'),
-                            Last: xmlHttp.getResponseHeader('Last-Modified'),
-                            text: xmlHttp.responseText
-                        });
-                    }
-                    return xmlHttp.responseText;
-                } else if (xmlHttp.status === 304){
-                    return getLocal(url).text;
-                } else {
-                    throw new Error(xmlHttp.status+':'+url);
-                }
-            },
+            // getJs: function(url){
+            //     if (!this.checkDomain(url)){
+            //         console.warn('跨域请求请使用requires方法:'+url);
+            //     }
+            //     var xmlHttp = new XMLHttpRequest();
+            //     try {
+            //         xmlHttp.open("GET",url,false);
+            //         if (getLocal(url) && getLocal(url).Last && getLocal(url).ETag){
+            //             xmlHttp.setRequestHeader('If-Modified-Since', getLocal(url).Last);
+            //             xmlHttp.setRequestHeader('If-None-Match', getLocal(url).ETag);
+            //             xmlHttp.setRequestHeader('Accept', "*/*");
+            //         }
+            //         xmlHttp.send();
+            //     } catch (e){
+            //         if (this.alert && isIE()){
+            //             this.alert = false;
+            //             alert('请IE用户设置 工具—>internet选项—>安全—>自定义级别—>其他 栏里面—>启用 跨域访问数据源—>启用，否者无法正常使用页面，请谅解');
+            //         }
+            //         throw new Error(e);
+            //     }
+            //     if (xmlHttp.status === 200){
+            //         if (!isPrivateMode){
+            //             localStorage[url] = JSON.stringify({
+            //                 ETag: xmlHttp.getResponseHeader('ETag'),
+            //                 Last: xmlHttp.getResponseHeader('Last-Modified'),
+            //                 text: xmlHttp.responseText
+            //             });
+            //         }
+            //         return xmlHttp.responseText;
+            //     } else if (xmlHttp.status === 304){
+            //         return getLocal(url).text;
+            //     } else {
+            //         throw new Error(xmlHttp.status+':'+url);
+            //     }
+            // },
             bind: function(event, callback){
                 if (!this.events[event]){
                     this.events[event] = [];
@@ -289,158 +263,146 @@
                 }
                 return clone(exports.exports);
             },
-            run: function(src){
-                var runs = [];
-                var news = [];
-                if (this.lists.length === 0){
-                    return;
-                }
-                for (var i=0,require; require = this.lists[i++];){
-                    if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){
-                        news.push(require);
-                        continue;
-                    }
-                    require['waited'].length > 0 && (require['waited'] = array_delete(src, require['waited']));
-                    if (require['waited'].length === 0){
-                        var exports = [];
-                        var end = true;
-                        for (var e=0,list; list = require['lists'][e++];){
-                            if (this.exports[list].defines > 0){
-                                end = false;
-                                break;
-                            }
-                            exports.push(this.getExport(list));
-                        }
-                        if (!end){
-                            news.push(require);
-                            continue;
-                        }
-                        runs.push({callback:require['callback'], exports: exports});
-                    } else {
-                        news.push(require);
+            run: function(){
+                var ready = true;
+                for (var src in this.modules){
+                    var module = this.modules[src];
+                    if (module.status < status.loaded){
+                        ready = false;
                     }
                 }
-                this.lists = news;
-                for (var j in runs){
-                    runs[j].callback.apply(this, runs[j].exports);
+                if (ready){
+                    this.trigger('onload');
                 }
-                if (this.lists.length === 0){
-                    this.trigger('onload', this.preloads);
-                }
+                // var runs = [];
+                // var news = [];
+                // if (this.lists.length === 0){
+                //     return;
+                // }
+                // for (var i=0,require; require = this.lists[i++];){
+                //     if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){
+                //         news.push(require);
+                //         continue;
+                //     }
+                //     require['waited'].length > 0 && (require['waited'] = array_delete(src, require['waited']));
+                //     if (require['waited'].length === 0){
+                //         var exports = [];
+                //         var end = true;
+                //         for (var e=0,list; list = require['lists'][e++];){
+                //             if (this.exports[list].defines > 0){
+                //                 end = false;
+                //                 break;
+                //             }
+                //             exports.push(this.getExport(list));
+                //         }
+                //         if (!end){
+                //             news.push(require);
+                //             continue;
+                //         }
+                //         runs.push({callback:require['callback'], exports: exports});
+                //     } else {
+                //         news.push(require);
+                //     }
+                // }
+                // this.lists = news;
+                // for (var j in runs){
+                //     runs[j].callback.apply(this, runs[j].exports);
+                // }
+                // if (this.lists.length === 0){
+                //     this.trigger('onload', this.preloads);
+                // }
             },
             define: function (callback) {
                 var module = arguments.length > 1 ? arguments[1] : null;
                 var script = getCurrentScript();
                 if (!script){throw new Error('no script loading')}
                 var src = script.getAttribute('data-src');
-                if (!src){throw new Error('script src error')}
-                callback.call(module ? inherit(module) : this, WeJs.exports[src]);
+                if (!src || isNone(this.modules[src])){throw new Error('script src error')}
+                this.preload(callback);
+                this.modules[src].status = status.defined;
+                this.modules[src].factory = callback;
+                this.modules[src].extend = module;
+            },
+            preload: function (cb) {
+                if (isFn(cb)){
+                    var text = cb.toString();
+                    if(text.indexOf('require') === -1 && text.indexOf('import') === -1) {
+                        return;
+                    }
+                    var i,list;
+                    var lists = text.match(/([^\S]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                    if (lists){
+                        for (i = 0; list = lists[i++];){
+                            this.load(list.split(/['"]/)[1]);
+                        }
+                    }
+                    lists = text.match(/([^\S]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                    if (lists){
+                        for (i = 0; list = lists[i++];){
+                            var t = list.match(/\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/);
+                            this.load(t.match(/['"]/)[1]);
+                        }
+                    }
+                }
             },
             imports: function(name){
                 return new importObj(name);
             },
             extend : function(src){
-                var module = this.require(src);
+                if (isNone(this.modules[src])){
+                    this.load(src);
+                }
                 var self = this;
                 var extendObj = function () {
                     this.define = function (callback) {
-                        self.define(callback, module);
+                        self.define(callback, src);
                     };
                 };
                 return new extendObj();
             },
             require: function(src){
-                src = isNone(this.alias[src]) ? src : this.alias[src];
-                var hash = isNone(this.hashs[src]) ? undefined : this.hashs[src];
                 src = this.analyse(src);
                 var module = this.modules[src];
-                var path = this.getPath(src, hash);
-                if (!path){
-                    return;
+                if (!module || module.status < status.loaded){
+                    return null;
                 }
-                if (!module){
-                    this.modules[src] = {loaded: false};
-                    if (!this.exports[src]){
-                        this.exports[src] = this.setExport(src);
-                    }
-                    var hm = d.createElement("script");
-                    var text = this.getJs(path);
-                    if (!text){
-                        throw new Error(src + ' get no script text');
-                    }
-                    hm.id = 'javascript-'+src;
-                    hm.setAttribute('data-src', src);
-                    hm.text = text;
-                    hm.readyState = 'interactive';
-                    currentScript = hm;
-                    var s = d.getElementsByTagName("script")[0];
-                    s.parentNode.insertBefore(hm, s);
-
-                    hm.readyState = 'complete';
-                    this.modules[src].loaded = true;
-                    this.exports[src].defines === 0 && this.run(src);
-
-                } else if (module.loaded === false){
-                    console.warn(src, ' has been loading, cannot require again');
+                if (module.status === status.defined && isFn(module.factory)){
+                    module.status = status.executing;
+                    module.factory.call(module.extend ? inherit(this.require(module.extend)) : this, WeJs.exports[src]);
+                    module.status = status.executed;
                 }
                 return this.getExport(src);
             },
-            requires: function (lists, callback) {
-                callback = isFn(callback) ? callback : function(){};
-                lists = isArr(lists) ? lists : [lists];
+            load: function (src) {
+                src = this.analyse(src);
                 var self = this;
-                var waited = [];
-                var newList = [];
-                for (var i=0,src; src = lists[i++];){
-                    src = isNone(this.alias[src]) ? src : this.alias[src];
-                    var hash = isNone(this.hashs[src]) ? undefined : this.hashs[src];
-                    src = this.analyse(src);
-                    newList.push(src);
-                    var module = this.modules[src];
-                    var path = this.getPath(src, hash);
-                    if (!path){
-                        return;
-                    }
-                    if (!module) {
-                        this.modules[src] = {loaded: false};
-                        if (!this.exports[src]){
-                            this.exports[src] = this.setExport(src);
-                        }
-                        var hm = d.createElement("script");
-                        hm.type = 'text/javascript';
-                        hm.id = 'javascript-'+src;
-                        hm.setAttribute('data-src', src);
-                        hm.src = path;
-                        hm.onload = hm.onreadystatechange = function(){
-                            if(!this.readyState || this.readyState === "loaded" || this.readyState === "complete") {
-                                this.onload = this.onreadystatechange = null;
-                                var src = this.getAttribute('data-src');
-                                self.modules[src].loaded = true;
-                                self.run(src);
-                            }
-                        };
-                        hm.onerror=function(){
+                var module = this.modules[src];
+                if (!module){
+                    this.modules[src] = {status: status.loading, factory: null, extend: null};
+                    var path = this.getPath(src);
+                    var hm = d.createElement("script");
+                    hm.type = 'text/javascript';
+                    hm.id = 'javascript-'+src;
+                    hm.setAttribute('data-src', src);
+                    hm.src = path;
+                    hm.onload = hm.onreadystatechange = function(){
+                        if(!this.readyState || this.readyState === "loaded" || this.readyState === "complete") {
+                            this.onload = this.onreadystatechange = null;
                             var src = this.getAttribute('data-src');
-                            console.log(src+': load error');
-                            self.modules[src].loaded = true;
-                            self.run(src);
-                        };
-                        var s = d.getElementsByTagName("script")[0];
-                        s.parentNode.insertBefore(hm, s);
-                        waited.push(src);
-                    } else if (module.loaded === false){
-                        waited.push(src);
-                    }
-                }
-                lists = newList;
-                if (waited.length > 0){
-                    this.lists.push({lists:lists, waited:waited, callback:callback});
-                } else {
-                    var exports = [];
-                    for (var e=0,list; list = lists[e++];){
-                        exports.push(this.getExport(list));
-                    }
-                    callback.apply(this, exports);
+                            self.modules[src].status === status.loading && (self.modules[src].status = status.loaded);
+                            hm.parentNode.removeChild(hm);
+                            self.run();
+                        }
+                    };
+                    hm.onerror=function(){
+                        var src = this.getAttribute('data-src');
+                        console.log(src+': load error');
+                        self.modules[src].status = status.error;
+                        hm.parentNode.removeChild(hm);
+                        self.run();
+                    };
+                    var s = d.getElementsByTagName("script")[0];
+                    s.parentNode.insertBefore(hm, s);
                 }
             }
         };
@@ -448,9 +410,6 @@
         root.WeJs = WeJs;
         root.require = function(){
             return WeJs.require.apply(WeJs, arguments);
-        };
-        root.requires = function(){
-            return WeJs.requires.apply(WeJs, arguments);
         };
         root.imports = function(){
             return WeJs.imports.apply(WeJs, arguments);
@@ -469,13 +428,11 @@
     var alias = getValue(current.getAttribute('data-alias'), {});
     var hashs = getValue(current.getAttribute('data-hashs'), {});
     var main = getValue(current.getAttribute('data-main'));
-    var preload = getValue(current.getAttribute('data-preload'));
     root.WeJs.init({path:path, alias: alias, hashs: hashs});
-    if (preload){
-        preload = isArr(preload) ? preload : preload.split(',');
-        root.requires(preload, function () {
-            root.WeJs.preloads = arguments;
-            main && root.requires(main);
+    if (main){
+        WeJs.load(main);
+        WeJs.ready(function () {
+            WeJs.require(main)
         });
     }
 })(this, document);
