@@ -3,16 +3,32 @@
  */
 ;(function (root, d) {
     "use strict";
-    function in_array(needle, haystack) {
-        if(typeof needle === 'string' || typeof needle === 'number') {
-            for(var i in haystack) {
-                if(haystack[i] === needle) {
-                    return i;
-                }
-            }
+    //JS 模拟$(document).ready()
+    (function () {
+        if (d.onReady){
+            return;
         }
-        return -1;
-    }
+        var ie = !!(window.attachEvent && !window.opera);
+        var wk = /webkit\/(\d+)/i.test(navigator.userAgent) && (RegExp.$1 < 525);
+        var fn = [];
+        var run = function () { for (var i = 0; i < fn.length; i++) fn[i](); };
+        d.onReady = function (f) {
+            if (!ie && !wk && d.addEventListener)
+                return d.addEventListener('DOMContentLoaded', f, false);
+            if (fn.push(f) > 1) return;
+            if (ie)
+                (function () {
+                    try { d.documentElement.doScroll('left'); run(); }
+                    catch (err) { //noinspection JSAnnotator
+                        setTimeout(arguments.callee, 0); }
+                })();
+            else if (wk)
+                var t = setInterval(function () {
+                    if (/^(loaded|complete)$/.test(d.readyState))
+                        clearInterval(t), run();
+                }, 0);
+        };
+    })();
 
     function isNone(o){
         return 'undefined' === type(o);
@@ -106,22 +122,9 @@
     };
 
     var ExportObj = function(src, ret){
-        // var self = this;
         this.name = src;
         this.exports = {};
-        // this.defines = 0;
         ret && (this.__tmp = ret);
-        // this.requires = function(lists, callback){
-        //     self.defines++;
-        //     WeJs.requires(lists, function(){
-        //         callback.apply(this, arguments);
-        //         self.defines--;
-        //         if (self.defines === 0){
-        //             WeJs.modules[self.name].loaded = true;
-        //             WeJs.run(self.name);
-        //         }
-        //     });
-        // };
     };
 
     var currentScript;
@@ -161,11 +164,17 @@
                 for (var uri in configs.hashs){
                     isString(uri) && (this.hashs[this.analyse(uri)] = configs.hashs[uri]);
                 }
+                if (isArr(configs.async)){
+                    for (var i=0,url; url = configs.async[i++];){
+                        this.load(url, false);
+                    }
+                }
                 return this;
             },
             ready: function(callback){
+                var script = getCurrentScript();
                 this.bind('onload', callback);
-                this.preload(callback);
+                this.preload(script.text ? script.text : callback);
                 this.run();
             },
             analyse: function (src) {
@@ -199,41 +208,6 @@
                 }
                 return path;
             },
-            // getJs: function(url){
-            //     if (!this.checkDomain(url)){
-            //         console.warn('跨域请求请使用requires方法:'+url);
-            //     }
-            //     var xmlHttp = new XMLHttpRequest();
-            //     try {
-            //         xmlHttp.open("GET",url,false);
-            //         if (getLocal(url) && getLocal(url).Last && getLocal(url).ETag){
-            //             xmlHttp.setRequestHeader('If-Modified-Since', getLocal(url).Last);
-            //             xmlHttp.setRequestHeader('If-None-Match', getLocal(url).ETag);
-            //             xmlHttp.setRequestHeader('Accept', "*/*");
-            //         }
-            //         xmlHttp.send();
-            //     } catch (e){
-            //         if (this.alert && isIE()){
-            //             this.alert = false;
-            //             alert('请IE用户设置 工具—>internet选项—>安全—>自定义级别—>其他 栏里面—>启用 跨域访问数据源—>启用，否者无法正常使用页面，请谅解');
-            //         }
-            //         throw new Error(e);
-            //     }
-            //     if (xmlHttp.status === 200){
-            //         if (!isPrivateMode){
-            //             localStorage[url] = JSON.stringify({
-            //                 ETag: xmlHttp.getResponseHeader('ETag'),
-            //                 Last: xmlHttp.getResponseHeader('Last-Modified'),
-            //                 text: xmlHttp.responseText
-            //             });
-            //         }
-            //         return xmlHttp.responseText;
-            //     } else if (xmlHttp.status === 304){
-            //         return getLocal(url).text;
-            //     } else {
-            //         throw new Error(xmlHttp.status+':'+url);
-            //     }
-            // },
             bind: function(event, callback){
                 if (!this.events[event]){
                     this.events[event] = [];
@@ -274,43 +248,6 @@
                 if (ready){
                     this.trigger('onload');
                 }
-                // var runs = [];
-                // var news = [];
-                // if (this.lists.length === 0){
-                //     return;
-                // }
-                // for (var i=0,require; require = this.lists[i++];){
-                //     if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){
-                //         news.push(require);
-                //         continue;
-                //     }
-                //     require['waited'].length > 0 && (require['waited'] = array_delete(src, require['waited']));
-                //     if (require['waited'].length === 0){
-                //         var exports = [];
-                //         var end = true;
-                //         for (var e=0,list; list = require['lists'][e++];){
-                //             if (this.exports[list].defines > 0){
-                //                 end = false;
-                //                 break;
-                //             }
-                //             exports.push(this.getExport(list));
-                //         }
-                //         if (!end){
-                //             news.push(require);
-                //             continue;
-                //         }
-                //         runs.push({callback:require['callback'], exports: exports});
-                //     } else {
-                //         news.push(require);
-                //     }
-                // }
-                // this.lists = news;
-                // for (var j in runs){
-                //     runs[j].callback.apply(this, runs[j].exports);
-                // }
-                // if (this.lists.length === 0){
-                //     this.trigger('onload', this.preloads);
-                // }
             },
             define: function (callback) {
                 var module = arguments.length > 1 ? arguments[1] : null;
@@ -324,24 +261,25 @@
                 this.modules[src].extend = module;
             },
             preload: function (cb) {
+                var text = cb;
                 if (isFn(cb)){
-                    var text = cb.toString();
-                    if(text.indexOf('require') === -1 && text.indexOf('import') === -1) {
-                        return;
+                    text = cb.toString();
+                }
+                if(text.indexOf('require') === -1 && text.indexOf('import') === -1) {
+                    return;
+                }
+                var i,list;
+                var lists = text.match(/([\s=;)}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                if (lists){
+                    for (i = 0; list = lists[i++];){
+                        this.load(list.split(/['"]/)[1]);
                     }
-                    var i,list;
-                    var lists = text.match(/([^\S]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
-                    if (lists){
-                        for (i = 0; list = lists[i++];){
-                            this.load(list.split(/['"]/)[1]);
-                        }
-                    }
-                    lists = text.match(/([^\S]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
-                    if (lists){
-                        for (i = 0; list = lists[i++];){
-                            var t = list.match(/\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/);
-                            this.load(t.match(/['"]/)[1]);
-                        }
+                }
+                lists = text.match(/([\s=;)}:+\-*/,]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                if (lists){
+                    for (i = 0; list = lists[i++];){
+                        var t = list.match(/\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/);
+                        this.load(t.match(/['"]/)[1]);
                     }
                 }
             },
@@ -373,33 +311,41 @@
                 }
                 return this.getExport(src);
             },
-            load: function (src) {
+            load: function (src, async) {
+                isNone(async) && (async = true);
                 src = this.analyse(src);
                 var self = this;
                 var module = this.modules[src];
                 if (!module){
-                    this.modules[src] = {status: status.loading, factory: null, extend: null};
-                    var path = this.getPath(src);
+                    async && (this.modules[src] = {status: status.loading, factory: null, extend: null});
+                    var path = async  ? this.getPath(src) : src;
                     var hm = d.createElement("script");
                     hm.type = 'text/javascript';
                     hm.id = 'javascript-'+src;
                     hm.setAttribute('data-src', src);
+                    hm.setAttribute('data-async', (async ? "true" : ""));
                     hm.src = path;
                     hm.onload = hm.onreadystatechange = function(){
                         if(!this.readyState || this.readyState === "loaded" || this.readyState === "complete") {
                             this.onload = this.onreadystatechange = null;
                             var src = this.getAttribute('data-src');
-                            self.modules[src].status === status.loading && (self.modules[src].status = status.loaded);
+                            var async = this.getAttribute('data-async');
                             hm.parentNode.removeChild(hm);
-                            self.run();
+                            if (async){
+                                self.modules[src].status === status.loading && (self.modules[src].status = status.loaded);
+                                self.run();
+                            }
                         }
                     };
                     hm.onerror=function(){
+                        console.error(src+': load error');
                         var src = this.getAttribute('data-src');
-                        console.log(src+': load error');
-                        self.modules[src].status = status.error;
+                        var async = this.getAttribute('data-async');
                         hm.parentNode.removeChild(hm);
-                        self.run();
+                        if (async) {
+                            self.modules[src].status = status.error;
+                            self.run();
+                        }
                     };
                     var s = d.getElementsByTagName("script")[0];
                     s.parentNode.insertBefore(hm, s);
@@ -427,14 +373,20 @@
     var path = getValue(current.getAttribute('data-path'), '/');
     var alias = getValue(current.getAttribute('data-alias'), {});
     var hashs = getValue(current.getAttribute('data-hashs'), {});
+    var async = getValue(current.getAttribute('data-async'), []);
     var main = getValue(current.getAttribute('data-main'));
-    root.WeJs.init({path:path, alias: alias, hashs: hashs});
+    root.WeJs.init({path:path, alias: alias, hashs: hashs, async: async});
     if (main){
         WeJs.load(main);
         WeJs.ready(function () {
             WeJs.require(main)
         });
     }
+    d.onReady(function () {
+        for (var i=0, script; script = document.scripts[i++];){
+            script.text && WeJs.preload(script.text);
+        }
+    });
 })(this, document);
 
 
