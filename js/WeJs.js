@@ -338,7 +338,7 @@
                 if(text.indexOf('require') === -1 && text.indexOf('import') === -1) {
                     return;
                 }
-                var i,list,deps=[],p;
+                var i,list,deps=[],p,d;
                 var lists = text.match(/([\s=;(){}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
