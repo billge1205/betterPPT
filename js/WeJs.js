@@ -269,13 +269,13 @@
                     return;
                 }
                 var i,list;
-                var lists = text.match(/([\s=;)}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                var lists = text.match(/([\s=;(){}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
                         this.load(list.split(/['"]/)[1]);
                     }
                 }
-                lists = text.match(/([\s=;)}:+\-*/,]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                lists = text.match(/([\s=;(){}:+\-*/,]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
                         var t = list.match(/\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/);
@@ -338,8 +338,8 @@
                         }
                     };
                     hm.onerror=function(){
-                        console.error(src+': load error');
                         var src = this.getAttribute('data-src');
+                        console.error(src+': load error');
                         var async = this.getAttribute('data-async');
                         hm.parentNode.removeChild(hm);
                         if (async) {
@@ -374,8 +374,15 @@
     var alias = getValue(current.getAttribute('data-alias'), {});
     var hashs = getValue(current.getAttribute('data-hashs'), {});
     var async = getValue(current.getAttribute('data-async'), []);
+    var preload = getValue(current.getAttribute('data-preload'));
     var main = getValue(current.getAttribute('data-main'));
     root.WeJs.init({path:path, alias: alias, hashs: hashs, async: async});
+    if (preload){
+        isString(preload) && (preload = preload.split(','));
+        for (var i=0,p;p=preload[i++];){
+            WeJs.load(p)
+        }
+    }
     if (main){
         WeJs.load(main);
         WeJs.ready(function () {
