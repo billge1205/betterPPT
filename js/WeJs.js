@@ -1,30 +1,30 @@
 /**
  * Created by billge on 2017/6/14.
  */
-;(function (root, d) {
+;(function (root, document) {
     "use strict";
     //JS 模拟$(document).ready()
     (function () {
-        if (d.onReady){
+        if (document.onReady){
             return;
         }
         var ie = !!(window.attachEvent && !window.opera);
         var wk = /webkit\/(\d+)/i.test(navigator.userAgent) && (RegExp.$1 < 525);
         var fn = [];
         var run = function () { for (var i = 0; i < fn.length; i++) fn[i](); };
-        d.onReady = function (f) {
-            if (!ie && !wk && d.addEventListener)
-                return d.addEventListener('DOMContentLoaded', f, false);
+        document.onReady = function (f) {
+            if (!ie && !wk && document.addEventListener)
+                return document.addEventListener('DOMContentLoaded', f, false);
             if (fn.push(f) > 1) return;
             if (ie)
                 (function () {
-                    try { d.documentElement.doScroll('left'); run(); }
+                    try { document.documentElement.doScroll('left'); run(); }
                     catch (err) { //noinspection JSAnnotator
                         setTimeout(arguments.callee, 0); }
                 })();
             else if (wk)
                 var t = setInterval(function () {
-                    if (/^(loaded|complete)$/.test(d.readyState))
+                    if (/^(loaded|complete)$/.test(document.readyState))
                         clearInterval(t), run();
                 }, 0);
         };
@@ -431,7 +431,7 @@
                 if (!module){
                     async && (this.modules[src] = {status: status.loading, factory: null, extend: null, deps: []});
                     var path = async  ? this.getPath(src) : src;
-                    var hm = d.createElement("script");
+                    var hm = document.createElement("script");
                     hm.type = 'text/javascript';
                     hm.id = 'javascript-'+src;
                     hm.setAttribute('data-src', src);
@@ -461,7 +461,7 @@
                             self.run(src);
                         }
                     };
-                    var s = d.getElementsByTagName("script")[0];
+                    var s = document.getElementsByTagName("script")[0];
                     s.parentNode.insertBefore(hm, s);
                 }
             }
@@ -501,7 +501,7 @@
         }
     }
     main && WeJs.requires(main);
-    d.onReady(function () {
+    document.onReady(function () {
         for (var i=0, script; script = document.scripts[i++];){
             script.text && WeJs.preload(script.text);
         }
