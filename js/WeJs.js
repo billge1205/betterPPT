@@ -168,7 +168,7 @@
         var WeJs = {
             version : '0.10.1',
             jsHost: '', jsRoot: '', modules: {},exports: {},events: {},
-            alias: {}, hashs: {},runList: [],lists:[],
+            alias: {}, hashs: {}, lists:[],
             init: function(configs){
                 this.alias = configs.alias;
                 // 分析url
