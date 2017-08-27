@@ -30,6 +30,22 @@
         };
     })();
 
+    function in_array(needle, haystack) {
+        if(typeof needle === 'string' || typeof needle === 'number') {
+            for(var i in haystack) {
+                if(haystack[i] === needle) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    function array_delete(needle, haystack){
+        haystack.splice(in_array(needle, haystack), 1);
+        return haystack;
+    }
+
     function isNone(o){
         return 'undefined' === type(o);
     }
@@ -152,7 +168,7 @@
         var WeJs = {
             version : '0.10.1',
             jsHost: '', jsRoot: '', modules: {},exports: {},events: {},
-            alias: {}, hashs: {},
+            alias: {}, hashs: {},runList: [],lists:[],
             init: function(configs){
                 this.alias = configs.alias;
                 // 分析url
@@ -237,7 +253,15 @@
                 }
                 return clone(exports.exports);
             },
-            run: function(){
+            exec: function (src) {
+                var module = this.modules[src];
+                if (module.status === status.defined && isFn(module.factory)){
+                    module.status = status.executing;
+                    module.factory.call(module.extend ? inherit(this.require(module.extend)) : this, WeJs.exports[src]);
+                    module.status = status.executed;
+                }
+            },
+            loaded: function(){
                 var ready = true;
                 for (var src in this.modules){
                     var module = this.modules[src];
@@ -249,18 +273,64 @@
                     this.trigger('onload');
                 }
             },
+            run: function(src){
+                var runs = [];
+                var news = [];
+                if (this.lists.length === 0){
+                    return;
+                }
+                for (var i=0,require; require = this.lists[i++];){
+                    if (require['waited'].length > 0 && in_array(src, require['waited']) === -1){
+                        news.push(require);
+                        continue;
+                    }
+                    require['waited'].length > 0 && (require['waited'] = array_delete(src, require['waited']));
+                    if (require['waited'].length === 0){
+                        var exports = [];
+                        var end = true;
+                        for (var e=0,list; list = require['lists'][e++];){
+                            var deps = this.modules[list].deps;
+                            for (var j=0, d; d= deps[j++];){
+                                if (isNone(this.modules[d]) || this.modules[d].status < status.loaded){
+                                    end = false;
+                                    break;
+                                }
+                            }
+                            if (!end){
+                                news.push(require);
+                                break;
+                            }
+                            this.exec(list);
+                            exports.push(this.getExport(list));
+                        }
+                        if (!end){
+                            continue;
+                        }
+                        runs.push({callback:require['callback'], exports: exports});
+                    } else {
+                        news.push(require);
+                    }
+                }
+                this.lists = news;
+                for (i in runs){
+                    runs[i].callback.apply(this, runs[i].exports);
+                }
+            },
             define: function (callback) {
                 var module = arguments.length > 1 ? arguments[1] : null;
                 var script = getCurrentScript();
                 if (!script){throw new Error('no script loading')}
                 var src = script.getAttribute('data-src');
                 if (!src || isNone(this.modules[src])){throw new Error('script src error')}
-                this.preload(callback);
+                this.preload(callback, src);
                 this.modules[src].status = status.defined;
                 this.modules[src].factory = callback;
-                this.modules[src].extend = module;
+                if (module){
+                    this.modules[src].extend = module;
+                    this.modules[src].deps.push(this.analyse(module));
+                }
             },
-            preload: function (cb) {
+            preload: function (cb, src) {
                 var text = cb;
                 if (isFn(cb)){
                     text = cb.toString();
@@ -268,18 +338,29 @@
                 if(text.indexOf('require') === -1 && text.indexOf('import') === -1) {
                     return;
                 }
-                var i,list;
+                var i,list,deps=[],p;
                 var lists = text.match(/([\s=;(){}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
-                        this.load(list.split(/['"]/)[1]);
+                        p = list.split(/['"]/)[1];
+                        this.load(p);
+                        deps.push(this.analyse(p));
                     }
                 }
                 lists = text.match(/([\s=;(){}:+\-*/,]|^)import\([^)]+\)\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
                         var t = list.match(/\.from\(\s*['"][\w_./:#?=&]+['"]\s*\)/);
-                        this.load(t.match(/['"]/)[1]);
+                        p = t.match(/['"]/)[1];
+                        this.load(p);
+                        deps.push(this.analyse(p));
+                    }
+                }
+                if (src && !isNone(this.modules[src])){
+                    for (i=0,d; d= deps[i++];){
+                        if (in_array(d, this.modules[src].deps) === -1){
+                            this.modules[src].deps.push(d);
+                        }
                     }
                 }
             },
@@ -304,12 +385,43 @@
                 if (!module || module.status < status.loaded){
                     return null;
                 }
-                if (module.status === status.defined && isFn(module.factory)){
-                    module.status = status.executing;
-                    module.factory.call(module.extend ? inherit(this.require(module.extend)) : this, WeJs.exports[src]);
-                    module.status = status.executed;
-                }
+                this.exec(src);
                 return this.getExport(src);
+            },
+            requires: function (lists, callback) {
+                callback = isFn(callback) ? callback : function(){};
+                lists = isArr(lists) ? lists : [lists];
+                var waited = [];
+                var newList = [];
+                for (var i=0,src; src = lists[i++];){
+                    src = this.analyse(src);
+                    newList.push(src);
+                    isNone(this.modules[src]) && this.load(src);
+                    var module = this.modules[src];
+                    if (module.status < status.loaded){
+                        waited.push(src);
+                    } else {
+                        var deps = module.deps, end=true;
+                        for (var j=0,d; d=deps[j++];){
+                            if (this.modules[d].status < status.loaded){
+                                end=false;
+                                waited.push(src);
+                                break;
+                            }
+                        }
+                        end && this.exec(src);
+                    }
+                }
+                lists = newList;
+                if (waited.length > 0){
+                    this.lists.push({lists:lists, waited:waited, callback:callback});
+                } else {
+                    var exports = [];
+                    for (var e=0,list; list = newList[e++];){
+                        exports.push(this.getExport(list));
+                    }
+                    callback.apply(this, exports);
+                }
             },
             load: function (src, async) {
                 isNone(async) && (async = true);
@@ -317,7 +429,7 @@
                 var self = this;
                 var module = this.modules[src];
                 if (!module){
-                    async && (this.modules[src] = {status: status.loading, factory: null, extend: null});
+                    async && (this.modules[src] = {status: status.loading, factory: null, extend: null, deps: []});
                     var path = async  ? this.getPath(src) : src;
                     var hm = d.createElement("script");
                     hm.type = 'text/javascript';
@@ -330,10 +442,11 @@
                             this.onload = this.onreadystatechange = null;
                             var src = this.getAttribute('data-src');
                             var async = this.getAttribute('data-async');
-                            hm.parentNode.removeChild(hm);
+                            hm.parentNode && hm.parentNode.removeChild(hm);
                             if (async){
                                 self.modules[src].status === status.loading && (self.modules[src].status = status.loaded);
-                                self.run();
+                                self.loaded();
+                                self.run(src);
                             }
                         }
                     };
@@ -341,10 +454,11 @@
                         var src = this.getAttribute('data-src');
                         console.error(src+': load error');
                         var async = this.getAttribute('data-async');
-                        hm.parentNode.removeChild(hm);
+                        hm.parentNode && hm.parentNode.removeChild(hm);
                         if (async) {
                             self.modules[src].status = status.error;
-                            self.run();
+                            self.loaded();
+                            self.run(src);
                         }
                     };
                     var s = d.getElementsByTagName("script")[0];
@@ -356,6 +470,9 @@
         root.WeJs = WeJs;
         root.require = function(){
             return WeJs.require.apply(WeJs, arguments);
+        };
+        root.requires = function(){
+            return WeJs.requires.apply(WeJs, arguments);
         };
         root.imports = function(){
             return WeJs.imports.apply(WeJs, arguments);
@@ -383,12 +500,7 @@
             WeJs.load(p)
         }
     }
-    if (main){
-        WeJs.load(main);
-        WeJs.ready(function () {
-            WeJs.require(main)
-        });
-    }
+    main && WeJs.requires(main);
     d.onReady(function () {
         for (var i=0, script; script = document.scripts[i++];){
             script.text && WeJs.preload(script.text);
