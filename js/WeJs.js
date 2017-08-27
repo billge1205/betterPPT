@@ -300,8 +300,7 @@
                                 news.push(require);
                                 break;
                             }
-                            this.exec(list);
-                            exports.push(this.getExport(list));
+                            exports.push(list);
                         }
                         if (!end){
                             continue;
@@ -313,7 +312,12 @@
                 }
                 this.lists = news;
                 for (i in runs){
-                    runs[i].callback.apply(this, runs[i].exports);
+                    var args = [];
+                    for (var k=0, arg; arg=runs[i].exports[k++];){
+                        this.exec(arg);
+                        args.push(this.getExport(arg));
+                    }
+                    runs[i].callback.apply(this, args);
                 }
             },
             define: function (callback) {
