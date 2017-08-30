@@ -17,10 +17,10 @@
                 return document.addEventListener('DOMContentLoaded', f, false);
             if (fn.push(f) > 1) return;
             if (ie)
-                (function () {
+                (function ff() {
                     try { document.documentElement.doScroll('left'); run(); }
                     catch (err) { //noinspection JSAnnotator
-                        setTimeout(arguments.callee, 0); }
+                        setTimeout(ff(), 0); }
                 })();
             else if (wk)
                 var t = setInterval(function () {
@@ -166,7 +166,7 @@
 
     if (isNone(root.WeJs)){
         var WeJs = {
-            version : '0.10.1',
+            version : '0.10.2',
             jsHost: '', jsRoot: '', modules: {},exports: {},events: {},
             alias: {}, hashs: {}, lists:[], preloads: [],
             init: function(configs){
@@ -343,7 +343,7 @@
                     return;
                 }
                 var i,list,deps=[],p,d;
-                var lists = text.match(/([\s=;(){}:+\-*/,]|^)require\(\s*['"][\w_./:#?=&]+['"]\s*\)/g);
+                var lists = text.match(/([\s=;(){}:+\-*/,]|^)require[s]?\(\s*['"][\w_./:#?=&]+['"]\s*[),]/g);
                 if (lists){
                     for (i = 0; list = lists[i++];){
                         p = list.split(/['"]/)[1];
