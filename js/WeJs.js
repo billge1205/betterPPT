@@ -168,7 +168,7 @@
         var WeJs = {
             version : '0.10.1',
             jsHost: '', jsRoot: '', modules: {},exports: {},events: {},
-            alias: {}, hashs: {}, lists:[],
+            alias: {}, hashs: {}, lists:[], preloads: [],
             init: function(configs){
                 this.alias = configs.alias;
                 // 分析url
@@ -270,7 +270,7 @@
                     }
                 }
                 if (ready){
-                    this.trigger('onload');
+                    this.trigger('onload', this.preloads);
                 }
             },
             run: function(src){
@@ -449,8 +449,8 @@
                             hm.parentNode && hm.parentNode.removeChild(hm);
                             if (async){
                                 self.modules[src].status === status.loading && (self.modules[src].status = status.loaded);
-                                self.loaded();
                                 self.run(src);
+                                self.loaded();
                             }
                         }
                     };
@@ -461,8 +461,8 @@
                         hm.parentNode && hm.parentNode.removeChild(hm);
                         if (async) {
                             self.modules[src].status = status.error;
-                            self.loaded();
                             self.run(src);
+                            self.loaded();
                         }
                     };
                     var s = document.getElementsByTagName("script")[0];
@@ -500,9 +500,9 @@
     root.WeJs.init({path:path, alias: alias, hashs: hashs, async: async});
     if (preload){
         isString(preload) && (preload = preload.split(','));
-        for (var i=0,p;p=preload[i++];){
-            WeJs.load(p)
-        }
+        WeJs.requires(preload, function () {
+            WeJs.preloads = arguments;
+        });
     }
     main && WeJs.requires(main);
     document.onReady(function () {
