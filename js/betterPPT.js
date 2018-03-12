@@ -93,14 +93,14 @@
 
     Element.prototype.sectionLeft = function (obj) {
         obj = obj || 'body';
-        if (this.offsetParent.is(obj)){
+        if (!this.offsetParent || this.offsetParent.is(obj)){
             return this.offsetLeft;
         }
         return this.offsetLeft + this.offsetParent.sectionLeft();
     };
     Element.prototype.sectionTop = function (obj) {
         obj = obj || 'body';
-        if (this.offsetParent.is(obj)){
+        if (!this.offsetParent || this.offsetParent.is(obj)){
             return this.offsetTop;
         }
         return this.offsetTop + this.offsetParent.sectionTop();
@@ -335,18 +335,19 @@
     var betterPPT = function(obj){
         if(!(this instanceof betterPPT)) return new betterPPT(obj);
 
-        this.obj = filter(obj);
+        this.obj = filter(obj); // ppt对象
         this.sections = query('section', this.obj);
-        this.click = true;
-        this.circle = false;
-        this.anchor = true;
-        this.showImg = true;
         this.current = 0;
         this.steps = [];
         this.last = null;
         this.oView = false;
         this.x = 0;
         this.y = 0;
+        this.click = true;   // 支持点击翻页
+        this.circle = false; // 支持循环到首页
+        this.anchor = true;  // 支持hash定位
+        this.showImg = true; // 是否点击图片显示
+        this.size = 16/9;       // 长宽比
         this.config = function (config) {
             config = config || {};
             typeof config.current === 'undefined' || (this.current = config.current);
@@ -354,6 +355,7 @@
             typeof config.click === 'undefined' || (this.click = config.click);
             typeof config.anchor === 'undefined' || (this.anchor = config.anchor);
             typeof config.showImg === 'undefined' || (this.showImg = config.showImg);
+            typeof config.size === 'undefined' || (this.size = config.size);
             return this;
         };
         this.init = function(){
@@ -542,7 +544,7 @@
             var ww = window.innerWidth;
             var h = wh * 0.95;
             var w = ww * 0.95;
-            w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
+            w/h > this.size && (w = h * this.size) || (h = w / this.size);
             var y = -1*h/2 - this.y;
             var x = -1*w/2 - this.x + (n-this.current)*w/2;
             var size = h/20;
@@ -563,7 +565,7 @@
             var ww = window.innerWidth;
             var h = wh * 0.95;
             var w = ww * 0.95;
-            w/h > 1.5 && (w = h * 1.5) || (h = w / 1.5);
+            w/h > this.size && (w = h * this.size) || (h = w / this.size);
             var size = h/20;
             var pt = h/30;
             var pl = w/30;
@@ -725,7 +727,7 @@
                         var action = obj.getAttribute('action');
                         if (action){
                             action = eval(action);
-                            action.call(obj, true);
+                            isFn(action) && action.call(obj, true);
                         }
                     }
                 });
